@@ -66,3 +66,75 @@ describe('GET /api/system', () => {
     )
   })
 })
+
+// These run in declaration order against the same live app/provider instance
+// (module-scoped, like the real server) to smoke-test the full manual
+// action path: route -> safetyController -> SimulatedDeviceProvider.
+describe('POST /api/irrigation (manual actions, end-to-end against the real seeded farm)', () => {
+  it('starts a real seeded zone through the safety controller', async () => {
+    const res = await request(app).post('/api/irrigation/zone-a/start').send()
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.zone.state.active).toBe(true)
+  })
+
+  it('reflects the started zone on the next zones read', async () => {
+    const res = await request(app).get('/api/zones')
+    expect(res.body.find((z: { id: string }) => z.id === 'zone-a').state.active).toBe(true)
+  })
+
+  it('stops the same zone (stop is never debounced)', async () => {
+    const res = await request(app).post('/api/irrigation/zone-a/stop').send()
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.zone.state.active).toBe(false)
+  })
+
+  it('rejects an unknown zone', async () => {
+    const res = await request(app).post('/api/irrigation/not-a-real-zone/start').send()
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(false)
+    expect(res.body.reason).toMatch(/unknown zone/i)
+  })
+
+  it('rejects direct pump control while still in Auto mode', async () => {
+    const res = await request(app).post('/api/irrigation/pump').send({ isOn: true })
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(false)
+    expect(res.body.reason).toMatch(/manual mode/i)
+  })
+
+  it('rejects a malformed pump request body', async () => {
+    const res = await request(app).post('/api/irrigation/pump').send({ isOn: 'yes' })
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects a malformed mode request body', async () => {
+    const res = await request(app).post('/api/irrigation/mode').send({ mode: 'turbo' })
+    expect(res.status).toBe(400)
+  })
+
+  it('switches to Manual mode', async () => {
+    const res = await request(app).post('/api/irrigation/mode').send({ mode: 'manual' })
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+  })
+
+  it('now allows direct pump control in Manual mode', async () => {
+    const res = await request(app).post('/api/irrigation/pump').send({ isOn: true })
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+  })
+
+  it('turns the pump back off', async () => {
+    const res = await request(app).post('/api/irrigation/pump').send({ isOn: false })
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+  })
+
+  it('switches back to Auto mode', async () => {
+    const res = await request(app).post('/api/irrigation/mode').send({ mode: 'auto' })
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+  })
+})

@@ -34,6 +34,8 @@ export interface DeviceProvider {
   setPumpState(isOn: boolean): Promise<void>
   /** Requests a zone's valve be opened/closed. Only ever called by `safetyController` (Phase 3+). */
   setZoneValve(zoneId: string, isOn: boolean): Promise<void>
+  /** Switches Auto/Manual. Only ever called by `safetyController`. */
+  setOperationMode(mode: OperationMode): Promise<void>
 }
 
 export class NotImplementedError extends Error {

@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Activity, CloudRain, Database, Plus, Power, Settings2, Sprout } from '@/lib/icons'
-import type { IrrigationZone } from '@aquaflow/shared'
+import type { IrrigationZone, OperationMode } from '@aquaflow/shared'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -12,7 +13,14 @@ import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
 import { formatPercent } from '@/lib/format'
 
-function ZoneCard({ zone }: { zone: IrrigationZone }) {
+interface ZoneCardProps {
+  zone: IrrigationZone
+  pending: boolean
+  actionError: string | undefined
+  onToggle: (zone: IrrigationZone) => void
+}
+
+function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
   const minPct = zone.overrideMinPct ?? zone.crop.defaultMinMoisturePct
   const maxPct = zone.overrideMaxPct ?? zone.crop.defaultMaxMoisturePct
   const moisture = zone.state.soilMoisturePct.value
@@ -54,37 +62,98 @@ function ZoneCard({ zone }: { zone: IrrigationZone }) {
           {zone.sensorMode === 'default' ? 'Default sensor' : 'Custom sensor'}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button size="sm" variant="outline" disabled title="Zone editing arrives in Phase 3">
+          <Button size="sm" variant="outline" disabled title="Zone editing is not yet implemented">
             Edit
           </Button>
-          <Button size="sm" disabled title="Irrigation actions arrive in Phase 3">
-            {zone.state.active ? 'Stop' : 'Water now'}
+          <Button
+            size="sm"
+            variant={zone.state.active ? 'outline' : 'default'}
+            disabled={pending}
+            onClick={() => onToggle(zone)}
+          >
+            {pending ? 'Working…' : zone.state.active ? 'Stop' : 'Water now'}
           </Button>
-          <Button size="sm" variant="outline" disabled title="Zone editing arrives in Phase 3">
+          <Button size="sm" variant="outline" disabled title="Zone editing is not yet implemented">
             Reset
           </Button>
         </div>
+        {actionError ? <p className="text-xs text-red-600">{actionError}</p> : null}
       </CardContent>
     </Card>
   )
 }
 
+interface ActionState {
+  pending: boolean
+  error?: string
+}
+
+const IDLE: ActionState = { pending: false }
+
 /**
- * V1's Irrigation tab. Phase 1 wires every read-only sensor/status display
- * to the simulated device layer. Controls (Water now/Stop, manual pump,
- * Auto/Manual, zone edit) stay disabled on purpose — no irrigation
- * decision or actuation exists until Phase 3's safety controller does.
+ * V1's Irrigation tab, now with real actuation (Phase 3). Every button here
+ * calls `safetyController` through `/api/irrigation/*` — never the device
+ * provider directly — so the exact same tank-critical/stale-reading/
+ * debounce interlocks apply to a manual click as to the automatic
+ * hysteresis loop running on the server. Zone editing/adding remains out of
+ * scope for this phase.
  */
 export function IrrigationPage() {
-  const { data: zones } = usePolling(api.getZones)
-  const { data: water } = usePolling(api.getWater)
-  const { data: system } = usePolling(api.getSystem)
+  const zonesPolling = usePolling(api.getZones)
+  const waterPolling = usePolling(api.getWater)
+  const systemPolling = usePolling(api.getSystem)
+  const { data: zones } = zonesPolling
+  const { data: water } = waterPolling
+  const { data: system } = systemPolling
+
+  const [zoneActions, setZoneActions] = useState<Record<string, ActionState>>({})
+  const [pumpAction, setPumpAction] = useState<ActionState>(IDLE)
+  const [modeAction, setModeAction] = useState<ActionState>(IDLE)
+
+  async function refreshAll() {
+    await Promise.all([zonesPolling.refetch(), systemPolling.refetch(), waterPolling.refetch()])
+  }
+
+  async function handleZoneToggle(zone: IrrigationZone) {
+    setZoneActions((s) => ({ ...s, [zone.id]: { pending: true } }))
+    try {
+      const result = zone.state.active ? await api.stopZone(zone.id) : await api.startZone(zone.id)
+      setZoneActions((s) => ({ ...s, [zone.id]: { pending: false, error: result.ok ? undefined : result.reason } }))
+      await refreshAll()
+    } catch {
+      setZoneActions((s) => ({ ...s, [zone.id]: { pending: false, error: 'Request failed — please try again.' } }))
+    }
+  }
+
+  async function handlePumpToggle(isOn: boolean) {
+    setPumpAction({ pending: true })
+    try {
+      const result = await api.setPumpState(isOn)
+      setPumpAction({ pending: false, error: result.ok ? undefined : result.reason })
+      await refreshAll()
+    } catch {
+      setPumpAction({ pending: false, error: 'Request failed — please try again.' })
+    }
+  }
+
+  async function handleModeChange(mode: OperationMode) {
+    if (system?.system.operationMode === mode) return
+    setModeAction({ pending: true })
+    try {
+      const result = await api.setOperationMode(mode)
+      setModeAction({ pending: false, error: result.ok ? undefined : result.reason })
+      await refreshAll()
+    } catch {
+      setModeAction({ pending: false, error: 'Request failed — please try again.' })
+    }
+  }
 
   const avgMoisture =
     zones && zones.length > 0
       ? zones.reduce((sum, z) => sum + z.state.soilMoisturePct.value, 0) / zones.length
       : undefined
   const tankFillPct = water ? (water.mainTankL.value / water.tank.capacityL) * 100 : undefined
+  const isManual = system?.system.operationMode === 'manual'
 
   return (
     <div className="flex flex-col gap-4">
@@ -149,28 +218,53 @@ export function IrrigationPage() {
       <div className="grid gap-4 sm:grid-cols-2">
         <SectionCard icon={<Settings2 className="h-4 w-4" />} title="Operation mode">
           <div className="flex gap-2">
-            <Button className="flex-1" disabled variant={system?.system.operationMode === 'auto' ? 'default' : 'outline'}>
+            <Button
+              className="flex-1"
+              disabled={modeAction.pending}
+              variant={system?.system.operationMode === 'auto' ? 'default' : 'outline'}
+              onClick={() => handleModeChange('auto')}
+            >
               Auto
             </Button>
-            <Button className="flex-1" variant={system?.system.operationMode === 'manual' ? 'default' : 'outline'} disabled>
+            <Button
+              className="flex-1"
+              disabled={modeAction.pending}
+              variant={system?.system.operationMode === 'manual' ? 'default' : 'outline'}
+              onClick={() => handleModeChange('manual')}
+            >
               Manual
             </Button>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            System controls the pump automatically based on sensor readings. Switching modes arrives in
-            Phase 3.
+            {isManual
+              ? 'Automatic decisions are paused. Use "Water now" or Manual Pump Control to act directly.'
+              : 'System controls the pump automatically based on sensor readings.'}
           </p>
+          {modeAction.error ? <p className="mt-1 text-xs text-red-600">{modeAction.error}</p> : null}
         </SectionCard>
         <SectionCard icon={<Power className="h-4 w-4" />} title="Manual pump control">
           <div className="flex gap-2">
-            <Button className="flex-1" variant="outline" disabled>
+            <Button
+              className="flex-1"
+              variant="outline"
+              disabled={!isManual || pumpAction.pending}
+              onClick={() => handlePumpToggle(true)}
+            >
               Turn ON
             </Button>
-            <Button className="flex-1" variant="outline" disabled>
+            <Button
+              className="flex-1"
+              variant="outline"
+              disabled={!isManual || pumpAction.pending}
+              onClick={() => handlePumpToggle(false)}
+            >
               Turn OFF
             </Button>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">Manual pump control arrives in Phase 3.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isManual ? 'Pump responds directly to these buttons.' : 'Switch to Manual mode to control the pump.'}
+          </p>
+          {pumpAction.error ? <p className="mt-1 text-xs text-red-600">{pumpAction.error}</p> : null}
         </SectionCard>
       </div>
 
@@ -179,14 +273,21 @@ export function IrrigationPage() {
         title="Crop irrigation zones"
         description="Each zone is configured independently."
         action={
-          <Button size="sm" variant="outline" disabled title="Zone management arrives in Phase 3">
+          <Button size="sm" variant="outline" disabled title="Zone management is not yet implemented">
             <Plus className="h-4 w-4" /> Add zone
           </Button>
         }
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          {zones?.map((zone) => <ZoneCard key={zone.id} zone={zone} />) ??
-            Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
+          {zones?.map((zone) => (
+            <ZoneCard
+              key={zone.id}
+              zone={zone}
+              pending={zoneActions[zone.id]?.pending ?? false}
+              actionError={zoneActions[zone.id]?.error}
+              onToggle={handleZoneToggle}
+            />
+          )) ?? Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
         </div>
       </SectionCard>
     </div>

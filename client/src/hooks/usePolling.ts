@@ -4,6 +4,8 @@ interface PollingResult<T> {
   data: T | undefined
   error: Error | undefined
   isLoading: boolean
+  /** Fetches immediately, outside the regular interval — used right after a mutation so the UI doesn't wait up to `intervalMs` to reflect it. */
+  refetch: () => Promise<void>
 }
 
 /**
@@ -21,30 +23,30 @@ export function usePolling<T>(fetcher: () => Promise<T>, intervalMs = 5000): Pol
     fetcherRef.current = fetcher
   }, [fetcher])
 
+  const run = useRef(async () => {
+    try {
+      const result = await fetcherRef.current()
+      setData(result)
+      setError(undefined)
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)))
+    } finally {
+      setIsLoading(false)
+    }
+  })
+
   useEffect(() => {
     let cancelled = false
-
-    async function run() {
-      try {
-        const result = await fetcherRef.current()
-        if (!cancelled) {
-          setData(result)
-          setError(undefined)
-        }
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err : new Error(String(err)))
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
+    const tick = async () => {
+      if (!cancelled) await run.current()
     }
-
-    run()
-    const id = setInterval(run, intervalMs)
+    tick()
+    const id = setInterval(tick, intervalMs)
     return () => {
       cancelled = true
       clearInterval(id)
     }
   }, [intervalMs])
 
-  return { data, error, isLoading }
+  return { data, error, isLoading, refetch: () => run.current() }
 }

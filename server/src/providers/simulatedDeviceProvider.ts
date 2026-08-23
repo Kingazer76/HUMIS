@@ -214,13 +214,21 @@ export class SimulatedDeviceProvider implements DeviceProvider {
 
   async getSystemStatus(): Promise<SystemStatusReading> {
     const anyZoneActive = [...this.zones.values()].some((z) => z.active)
-    const phase = anyZoneActive
+    const allZonesSufficient = IRRIGATION_ZONE_CONFIGS.every((cfg) => {
+      const state = this.zones.get(cfg.id)
+      const minPct = cfg.overrideMinPct ?? this.cropById.get(cfg.cropId)?.defaultMinMoisturePct ?? 0
+      return (state?.soilMoisturePct ?? 0) > minPct
+    })
+
+    const phase: SystemStatusReading['phase'] = anyZoneActive
       ? 'irrigating'
       : this.isRaining
         ? 'rain-detected'
         : this.tankLevelL / TANK_CONFIG.capacityL < TANK_CONFIG.criticalThresholdPct / 100
           ? 'low-water'
-          : 'waiting'
+          : allZonesSufficient
+            ? 'soil-moisture-sufficient'
+            : 'waiting'
     return { phase, operationMode: this.operationMode }
   }
 
@@ -232,6 +240,10 @@ export class SimulatedDeviceProvider implements DeviceProvider {
     const zone = this.zones.get(zoneId)
     if (!zone) throw new Error(`Unknown zone: ${zoneId}`)
     zone.active = isOn
+  }
+
+  async setOperationMode(mode: OperationMode): Promise<void> {
+    this.operationMode = mode
   }
 
   // --- internals exposed for waterAccounting / tests --------------------

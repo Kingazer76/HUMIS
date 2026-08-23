@@ -57,4 +57,8 @@ export class ESP32DeviceProvider implements DeviceProvider {
   async setZoneValve(_zoneId: string, _isOn: boolean): Promise<void> {
     throw new NotImplementedError('ESP32DeviceProvider.setZoneValve')
   }
+
+  async setOperationMode(_mode: OperationMode): Promise<void> {
+    throw new NotImplementedError('ESP32DeviceProvider.setOperationMode')
+  }
 }

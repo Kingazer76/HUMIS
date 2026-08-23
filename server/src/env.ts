@@ -13,3 +13,6 @@ export const SIM_MINUTES_PER_TICK = Number(process.env.SIM_MINUTES_PER_TICK ?? 1
 
 /** Real milliseconds between simulation ticks. */
 export const SIM_TICK_INTERVAL_MS = Number(process.env.SIM_TICK_INTERVAL_MS ?? 5000)
+
+/** Real milliseconds between automatic irrigation decision cycles (Auto mode only). */
+export const AUTO_IRRIGATION_INTERVAL_MS = Number(process.env.AUTO_IRRIGATION_INTERVAL_MS ?? 5000)

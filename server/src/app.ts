@@ -1,5 +1,6 @@
 import cors from 'cors'
 import express, { type Express } from 'express'
+import { irrigationRouter } from './routes/irrigation.js'
 import { sourcesRouter } from './routes/sources.js'
 import { systemRouter } from './routes/system.js'
 import { waterRouter } from './routes/water.js'
@@ -23,6 +24,7 @@ export function createApp(): Express {
   app.use('/api/sources', sourcesRouter)
   app.use('/api/zones', zonesRouter)
   app.use('/api/system', systemRouter)
+  app.use('/api/irrigation', irrigationRouter)
 
   return app
 }

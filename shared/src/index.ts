@@ -136,4 +136,16 @@ export interface SystemSnapshot {
   system: SystemStatusReading
 }
 
-export const AQUAFLOW_SHARED_VERSION = '0.1.0'
+/**
+ * Response shape for every POST /api/irrigation/* action. `ok: false` means
+ * `safetyController` rejected the action (e.g. critical tank level, stale
+ * reading, debounce) — this is a normal, expected outcome, not a server
+ * error, and the UI should show `reason` rather than treat it as a failure.
+ */
+export interface IrrigationActionResult {
+  ok: boolean
+  reason: string
+  zone?: IrrigationZone
+}
+
+export const AQUAFLOW_SHARED_VERSION = '0.2.0'
