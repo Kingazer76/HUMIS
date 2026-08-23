@@ -1,20 +1,10 @@
-import cors from 'cors'
-import express from 'express'
+import { createApp } from './app.js'
+import { PORT } from './env.js'
+import { startSimulationEngine } from './simulation/simulationEngine.js'
 
-const PORT = Number(process.env.PORT ?? 5418)
+const app = createApp()
 
-const app = express()
-app.use(cors())
-app.use(express.json())
-
-/**
- * Phase 0 only proves the server boots and is reachable through the
- * client's dev proxy. Domain routes (/api/water, /api/zones, ...) are
- * added starting in Phase 1.
- */
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'aquaflow-server', timestamp: new Date().toISOString() })
-})
+startSimulationEngine()
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
