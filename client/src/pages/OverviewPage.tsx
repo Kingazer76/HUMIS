@@ -6,7 +6,7 @@ import {
   Layers,
   Sprout,
   ToggleLeft,
-} from 'lucide-react'
+} from '@/lib/icons'
 import { EstimateBadge } from '@/components/shared/EstimateBadge'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionCard } from '@/components/shared/SectionCard'

@@ -1,4 +1,4 @@
-import { AlertTriangle, CalendarDays, CloudSun, Leaf, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, CalendarDays, CloudSun, Leaf, ShieldCheck } from '@/lib/icons'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionCard } from '@/components/shared/SectionCard'
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ArrowDown, ArrowUp, Database, Droplets, Gauge, Plus } from 'lucide-react'
+import { ArrowDown, ArrowUp, Database, Droplets, Gauge, Plus } from '@/lib/icons'
 import type { DataTag, WaterSource } from '@aquaflow/shared'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'

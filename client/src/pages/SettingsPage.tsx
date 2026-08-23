@@ -1,4 +1,4 @@
-import { Settings2, Sprout } from 'lucide-react'
+import { Settings2, Sprout } from '@/lib/icons'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

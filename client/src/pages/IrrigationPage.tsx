@@ -1,4 +1,4 @@
-import { Activity, CloudRain, Database, Plus, Power, Settings2, Sprout } from 'lucide-react'
+import { Activity, CloudRain, Database, Plus, Power, Settings2, Sprout } from '@/lib/icons'
 import type { IrrigationZone } from '@aquaflow/shared'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'

@@ -1,4 +1,4 @@
-import { Database } from 'lucide-react'
+import { Database } from '@/lib/icons'
 import { SectionCard } from '@/components/shared/SectionCard'
 
 /**
