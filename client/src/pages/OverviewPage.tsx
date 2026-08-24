@@ -68,10 +68,10 @@ export function OverviewPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <MetricCard
           icon={<Sprout className="h-4 w-4" />}
-          label="Projected farm demand"
+          label="Combined zone flow"
           badge={projectedDemandLPerMin !== undefined ? <EstimateBadge tag="estimated" /> : undefined}
           value={projectedDemandLPerMin !== undefined ? formatRate(projectedDemandLPerMin) : undefined}
-          hint="Combined nominal zone demand while irrigating"
+          hint="Combined nominal flow when all zones are irrigating."
         />
         <MetricCard icon={<AlertTriangle className="h-4 w-4" />} label="Shortage risk" value="—" hint="Arrives in Phase 4" />
         <MetricCard
