@@ -30,7 +30,7 @@ export function TabNav() {
               'aquaflow-tab rounded-lg border-2 px-2 py-2.5 text-center text-sm leading-tight transition-colors sm:px-3',
               isActive
                 ? 'aquaflow-tab-active border-2 bg-primary font-semibold text-primary-foreground'
-                : 'border-2 border-primary/50 bg-card font-medium text-foreground hover:border-gold/70 hover:bg-secondary',
+                : 'border-2 border-primary/50 bg-card font-medium text-foreground hover:border-primary hover:bg-secondary',
             )
           }
         >
