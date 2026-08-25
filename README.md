@@ -16,8 +16,8 @@ V3 combines:
   `DeviceProvider`, so a simulated farm today can become a real ESP32-driven farm later
   without a redesign.
 
-This repository is being built in staged phases. **Phases 0–3 and 4A–4B are complete.**
-History is wired. Settings is not.
+This repository is being built in staged phases. **Phases 0–3 and 4A–4C are complete.**
+Settings writes live farm numbers (tank size, warning levels, and field setup) while the server is running.
 
 ## Why a flow-sensor disclaimer matters
 
@@ -72,9 +72,10 @@ Run the server test suite (includes shortage-prediction and weather fail-safe te
 npm test --workspace server
 ```
 
-Simulation state lives in memory inside the Express process. Restarting the server resets the
-farm. Weather is optional: if the weather provider is missing, returns nothing, or throws,
-planning still returns a valid days-remaining / shortage result from tank level and usage.
+Simulation state and Settings live in memory inside the Express process. Restarting the server
+resets the farm, including tank size and field setup. Weather is optional: if the weather
+provider is missing, returns nothing, or throws, planning still returns a valid days-remaining /
+shortage result from tank level and usage.
 
 ## Project status
 
@@ -84,9 +85,12 @@ planning still returns a valid days-remaining / shortage result from tank level 
       measured/estimated/simulated labeling.
 - [x] **Phase 3** — Irrigation tab, hysteresis-based irrigation engine, and the single
       safety-controller choke point for every pump/valve action.
-- [ ] **Phase 4** — Planning, History, and Settings. **4A done** (weather provider,
+- [x] **Phase 4** — Planning, History, and Settings. **4A done** (weather provider,
       shortage prediction, `/api/planning`, Overview/Planning days-remaining and shortage
-      risk). **4B done** (History tab + in-memory `historyLog`). **4C not started** (Settings tab).
+      risk). **4B done** (History tab + in-memory `historyLog`). **4C done** (Settings tab
+      writes tank capacity/thresholds and zone name/crop/watering-style/soil targets; those
+      numbers drive tank %, available water, days remaining, shortage risk, and irrigation
+      start/stop).
 - [ ] **Phase 5** — Farmer-friendly visual intelligence (plan only).
 - [ ] **Phase 6** — African-inspired visual polish (plan only).
 - [ ] **Phase 7** — AquaFlow Assistant (text chat), actions routed through the safety controller.

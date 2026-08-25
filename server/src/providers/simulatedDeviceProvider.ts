@@ -1,21 +1,22 @@
-import type {
-  CropProfile,
-  IrrigationZone,
-  IrrigationZoneConfig,
-  OperationMode,
-  PumpStateReading,
-  RainStatusReading,
-  SystemStatusReading,
-  TankState,
-  WaterSource,
+import {
+  moistureTargetsForZone,
+  type CropProfile,
+  type IrrigationZone,
+  type IrrigationZoneConfig,
+  type OperationMode,
+  type PumpStateReading,
+  type RainStatusReading,
+  type SystemStatusReading,
+  type TankState,
+  type WaterSource,
 } from '@aquaflow/shared'
+import { getTankConfig } from '../config/farmSettings.js'
 import {
   CROP_PROFILES,
   INITIAL_SOURCE_STATE,
   INITIAL_TANK_LEVEL_L,
   INITIAL_ZONE_MOISTURE_PCT,
   IRRIGATION_ZONE_CONFIGS,
-  TANK_CONFIG,
   WATER_SOURCE_CONFIGS,
 } from '../config/seedData.js'
 import {
@@ -45,6 +46,19 @@ interface ZoneInternalState {
   lastWateredAt: string | null
 }
 
+function copyZoneConfigs(): Map<string, IrrigationZoneConfig> {
+  return new Map(IRRIGATION_ZONE_CONFIGS.map((c) => [c.id, { ...c }]))
+}
+
+function initialZoneRuntime(): Map<string, ZoneInternalState> {
+  return new Map(
+    IRRIGATION_ZONE_CONFIGS.map((cfg) => [
+      cfg.id,
+      { soilMoisturePct: INITIAL_ZONE_MOISTURE_PCT[cfg.id] ?? 50, active: false, lastWateredAt: null },
+    ]),
+  )
+}
+
 /** What one tick actually did — used by waterAccounting to build tagged readings. */
 export interface TickResult {
   waterInL: number
@@ -72,12 +86,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
   private sources = new Map<string, SourceInternalState>(
     WATER_SOURCE_CONFIGS.map((cfg) => [cfg.id, { ...INITIAL_SOURCE_STATE[cfg.id] }]),
   )
-  private zones = new Map<string, ZoneInternalState>(
-    IRRIGATION_ZONE_CONFIGS.map((cfg) => [
-      cfg.id,
-      { soilMoisturePct: INITIAL_ZONE_MOISTURE_PCT[cfg.id] ?? 50, active: false, lastWateredAt: null },
-    ]),
-  )
+  private zones = initialZoneRuntime()
   private pumpOn = false
   private operationMode: OperationMode = 'auto'
   private isRaining = false
@@ -93,9 +102,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
   private cumulativeUsedByZoneL = new Map<string, number>(IRRIGATION_ZONE_CONFIGS.map((cfg) => [cfg.id, 0]))
 
   private cropById = new Map<string, CropProfile>(CROP_PROFILES.map((c) => [c.id, c]))
-  private zoneConfigById = new Map<string, IrrigationZoneConfig>(
-    IRRIGATION_ZONE_CONFIGS.map((c) => [c.id, c]),
-  )
+  private zoneConfigById = copyZoneConfigs()
 
   /**
    * Advances the simulation by `elapsedMinutes` of simulated time. Returns
@@ -127,7 +134,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
     }
 
     let waterUsedL = 0
-    for (const cfg of IRRIGATION_ZONE_CONFIGS) {
+    for (const cfg of this.zoneConfigById.values()) {
       const zone = this.zones.get(cfg.id)
       if (!zone) continue
 
@@ -147,7 +154,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
       this.cumulativeUsedByZoneL.set(cfg.id, (this.cumulativeUsedByZoneL.get(cfg.id) ?? 0) + used)
     }
 
-    this.tankLevelL = clamp(this.tankLevelL + waterInL - waterUsedL, 0, TANK_CONFIG.capacityL)
+    this.tankLevelL = clamp(this.tankLevelL + waterInL - waterUsedL, 0, getTankConfig().capacityL)
     this.cumulativeInflowL += waterInL
     this.cumulativeUsedL += waterUsedL
     this.simulatedMinutesElapsed += elapsedMinutes
@@ -191,7 +198,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
   }
 
   async getZones(): Promise<IrrigationZone[]> {
-    return IRRIGATION_ZONE_CONFIGS.map((cfg) => {
+    return [...this.zoneConfigById.values()].map((cfg) => {
       const state = this.zones.get(cfg.id)!
       const crop = this.cropById.get(cfg.cropId)
       if (!crop) throw new Error(`Unknown crop for zone ${cfg.id}`)
@@ -209,7 +216,50 @@ export class SimulatedDeviceProvider implements DeviceProvider {
   }
 
   async getZoneConfig(zoneId: string): Promise<IrrigationZoneConfig | undefined> {
-    return this.zoneConfigById.get(zoneId)
+    const cfg = this.zoneConfigById.get(zoneId)
+    return cfg ? { ...cfg } : undefined
+  }
+
+  /**
+   * If Settings shrinks tank size, do not leave stored litres above the new size.
+   * Not on DeviceProvider — Settings talks to the simulated farm directly.
+   */
+  applyTankCapacity(capacityL: number): void {
+    if (this.tankLevelL > capacityL) {
+      this.tankLevelL = capacityL
+    }
+  }
+
+  updateZoneConfig(next: IrrigationZoneConfig): void {
+    this.zoneConfigById.set(next.id, { ...next })
+  }
+
+  resetZoneConfig(zoneId: string): boolean {
+    const seed = IRRIGATION_ZONE_CONFIGS.find((c) => c.id === zoneId)
+    if (!seed) return false
+    this.zoneConfigById.set(zoneId, { ...seed })
+    return true
+  }
+
+  /** Test isolation — live zone configs and tank litres are process-wide. */
+  resetForTests(): void {
+    this.tankLevelL = INITIAL_TANK_LEVEL_L
+    this.sources = new Map(
+      WATER_SOURCE_CONFIGS.map((cfg) => [cfg.id, { ...INITIAL_SOURCE_STATE[cfg.id] }]),
+    )
+    this.zones = initialZoneRuntime()
+    this.pumpOn = false
+    this.operationMode = 'auto'
+    this.isRaining = false
+    this.rainTicksRemaining = 0
+    this.cumulativeInflowL = 0
+    this.cumulativeUsedL = 0
+    this.simulatedMinutesElapsed = 0
+    this.lastWaterInLPerMin = 0
+    this.lastWaterUsedLPerMin = 0
+    this.rollingConsumption = emptyRollingWindow()
+    this.cumulativeUsedByZoneL = new Map(IRRIGATION_ZONE_CONFIGS.map((cfg) => [cfg.id, 0]))
+    this.zoneConfigById = copyZoneConfigs()
   }
 
   async getRainStatus(): Promise<RainStatusReading> {
@@ -225,10 +275,13 @@ export class SimulatedDeviceProvider implements DeviceProvider {
   }
 
   async getSystemStatus(): Promise<SystemStatusReading> {
+    const tankConfig = getTankConfig()
     const anyZoneActive = [...this.zones.values()].some((z) => z.active)
-    const allZonesSufficient = IRRIGATION_ZONE_CONFIGS.every((cfg) => {
+    const allZonesSufficient = [...this.zoneConfigById.values()].every((cfg) => {
       const state = this.zones.get(cfg.id)
-      const minPct = cfg.overrideMinPct ?? this.cropById.get(cfg.cropId)?.defaultMinMoisturePct ?? 0
+      const crop = this.cropById.get(cfg.cropId)
+      if (!crop) return false
+      const { minPct } = moistureTargetsForZone({ ...cfg, crop })
       return (state?.soilMoisturePct ?? 0) > minPct
     })
 
@@ -236,7 +289,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
       ? 'irrigating'
       : this.isRaining
         ? 'rain-detected'
-        : this.tankLevelL / TANK_CONFIG.capacityL < TANK_CONFIG.criticalThresholdPct / 100
+        : this.tankLevelL / tankConfig.capacityL < tankConfig.criticalThresholdPct / 100
           ? 'low-water'
           : allZonesSufficient
             ? 'soil-moisture-sufficient'

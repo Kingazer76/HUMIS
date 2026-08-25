@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { TANK_CONFIG } from '../config/seedData.js'
+import { getTankConfig } from '../config/farmSettings.js'
 import { deviceProvider, simulatedProvider } from '../providers/index.js'
 import { ACTIVE_FLOW_INPUT_SOURCE } from '../providers/flowInputSource.js'
 import { buildWaterSnapshot } from '../water/waterAccounting.js'
@@ -14,7 +14,7 @@ waterRouter.get('/', async (_req, res, next) => {
 
     const snapshot = buildWaterSnapshot({
       tank,
-      tankConfig: TANK_CONFIG,
+      tankConfig: getTankConfig(),
       sources,
       waterInLPerMin: rates.waterInLPerMin,
       waterUsedLPerMin: rates.waterUsedLPerMin,

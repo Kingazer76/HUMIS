@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { TANK_CONFIG } from '../config/seedData.js'
+import { getTankConfig } from '../config/farmSettings.js'
 import { getWeatherAdjustmentSafely } from '../forecast/weatherProvider.js'
 import {
   emptyRollingWindow,
@@ -20,12 +20,13 @@ planningRouter.get('/', async (_req, res, next) => {
     // Never lets a weather failure block planning — see getWeatherAdjustmentSafely.
     const weatherAdjustment = await getWeatherAdjustmentSafely()
 
+    const tankConfig = getTankConfig()
     const prediction = predictShortage({
       availableTankL: tank.levelL.value,
       dailyConsumptionL,
-      tankCapacityL: TANK_CONFIG.capacityL,
-      lowThresholdPct: TANK_CONFIG.lowThresholdPct,
-      criticalThresholdPct: TANK_CONFIG.criticalThresholdPct,
+      tankCapacityL: tankConfig.capacityL,
+      lowThresholdPct: tankConfig.lowThresholdPct,
+      criticalThresholdPct: tankConfig.criticalThresholdPct,
       observedDays: observedDaysInWindow(window),
       weatherAdjustment,
     })

@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { TANK_CONFIG, WATER_SOURCE_CONFIGS } from '../config/seedData.js'
+import { applyTankSettings, resetFarmSettingsForTests } from '../config/farmSettings.js'
+import { IRRIGATION_ZONE_CONFIGS, TANK_CONFIG, WATER_SOURCE_CONFIGS } from '../config/seedData.js'
 import { SimulatedDeviceProvider } from './simulatedDeviceProvider.js'
 
 describe('SimulatedDeviceProvider', () => {
   let provider: SimulatedDeviceProvider
 
   beforeEach(() => {
+    resetFarmSettingsForTests()
     provider = new SimulatedDeviceProvider()
   })
 
@@ -117,5 +119,25 @@ describe('SimulatedDeviceProvider', () => {
     await provider.setZoneValve('zone-a', true)
     const zones = await provider.getZones()
     expect(zones.find((z) => z.id === 'zone-a')?.state.active).toBe(true)
+  })
+
+  it('returns live zone config copies, not the seeded objects', async () => {
+    provider.updateZoneConfig({
+      ...IRRIGATION_ZONE_CONFIGS[0]!,
+      name: 'Renamed in memory',
+    })
+    const zones = await provider.getZones()
+    expect(zones.find((z) => z.id === 'zone-a')?.name).toBe('Renamed in memory')
+    expect(IRRIGATION_ZONE_CONFIGS[0]!.name).toBe('Zone A — North Field')
+  })
+
+  it('clamps stored litres when tank capacity shrinks below the current level', async () => {
+    applyTankSettings({ capacityL: 5000, lowThresholdPct: 25, criticalThresholdPct: 15 })
+    provider.applyTankCapacity(5000)
+    const tank = await provider.getTankLevel()
+    expect(tank.levelL.value).toBeLessThanOrEqual(5000)
+    provider.tick(1)
+    const afterTick = await provider.getTankLevel()
+    expect(afterTick.levelL.value).toBeLessThanOrEqual(5000)
   })
 })

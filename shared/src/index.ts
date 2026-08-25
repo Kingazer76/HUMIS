@@ -76,6 +76,33 @@ export interface IrrigationZoneConfig {
   nominalOutflowRateLPerMin: number
 }
 
+/**
+ * Effective soil-moisture start/stop band for a zone: crop defaults, then
+ * optional overrides, then the watering-style shift (save water / extra).
+ * Used by the irrigation engine and by the Irrigation tab so both agree.
+ */
+export function moistureTargetsForZone(zone: {
+  irrigationPreference: IrrigationPreference
+  overrideMinPct?: number
+  overrideMaxPct?: number
+  crop: Pick<CropProfile, 'defaultMinMoisturePct' | 'defaultMaxMoisturePct'>
+}): { minPct: number; maxPct: number } {
+  const baseMin = zone.overrideMinPct ?? zone.crop.defaultMinMoisturePct
+  const baseMax = zone.overrideMaxPct ?? zone.crop.defaultMaxMoisturePct
+  let minPct = baseMin
+  let maxPct = baseMax
+  if (zone.irrigationPreference === 'water-saving') {
+    minPct = baseMin - 5
+    maxPct = baseMax - 5
+  } else if (zone.irrigationPreference === 'aggressive') {
+    minPct = baseMin + 5
+    maxPct = baseMax + 5
+  }
+  minPct = Math.min(99, Math.max(0, minPct))
+  maxPct = Math.min(100, Math.max(minPct + 1, maxPct))
+  return { minPct, maxPct }
+}
+
 export interface IrrigationZoneState {
   id: string
   soilMoisturePct: Tagged<number>
@@ -202,4 +229,27 @@ export interface HistorySnapshot {
   records: HistoryRecord[]
 }
 
-export const AQUAFLOW_SHARED_VERSION = '0.5.0'
+/**
+ * Response shape for GET /api/settings. Tank numbers and zone configs are
+ * the live farm settings (in-memory while the server is running).
+ */
+export interface SettingsSnapshot {
+  tank: TankConfig
+  tankDefaults: TankConfig
+  zones: IrrigationZone[]
+  crops: CropProfile[]
+}
+
+/**
+ * Response shape for every settings write. `ok: false` means the change
+ * was rejected (invalid numbers) and nothing was saved — a normal outcome,
+ * not a server crash.
+ */
+export interface SettingsActionResult {
+  ok: boolean
+  reason: string
+  tank?: TankConfig
+  zone?: IrrigationZoneConfig
+}
+
+export const AQUAFLOW_SHARED_VERSION = '0.6.0'

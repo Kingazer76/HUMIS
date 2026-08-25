@@ -10,6 +10,7 @@ import type {
   WaterSource,
 } from '@aquaflow/shared'
 import type { DeviceProvider } from '../providers/deviceProvider.js'
+import { applyTankSettings, resetFarmSettingsForTests } from '../config/farmSettings.js'
 import { safetyController } from './safetyController.js'
 
 const maize: CropProfile = {
@@ -119,10 +120,12 @@ vi.mock('../providers/index.js', () => ({
 describe('safetyController', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    resetFarmSettingsForTests()
   })
 
   afterEach(() => {
     vi.useRealTimers()
+    resetFarmSettingsForTests()
   })
 
   it('starts a zone when the tank is healthy and the zone is currently off', async () => {
@@ -138,6 +141,16 @@ describe('safetyController', () => {
     const result = await safetyController.setZoneActive('zone-critical-tank', true, 'manual')
     expect(result.ok).toBe(false)
     expect(result.reason).toMatch(/critical threshold/i)
+    expect(fakeProvider.setZoneValveCalls).toEqual([])
+  })
+
+  it('uses the live stop-watering setting, not only the seeded 15%', async () => {
+    applyTankSettings({ capacityL: 15000, lowThresholdPct: 90, criticalThresholdPct: 80 })
+    fakeProvider = new FakeDeviceProvider([makeZone('zone-raised-critical')])
+    fakeProvider.tankLevelL = 9000 // 60% — healthy vs 15%, blocked vs 80%
+    const result = await safetyController.setZoneActive('zone-raised-critical', true, 'manual')
+    expect(result.ok).toBe(false)
+    expect(result.reason).toMatch(/80%/)
     expect(fakeProvider.setZoneValveCalls).toEqual([])
   })
 

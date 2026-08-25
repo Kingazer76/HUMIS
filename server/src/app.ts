@@ -3,6 +3,7 @@ import express, { type Express } from 'express'
 import { historyRouter } from './routes/history.js'
 import { irrigationRouter } from './routes/irrigation.js'
 import { planningRouter } from './routes/planning.js'
+import { settingsRouter } from './routes/settings.js'
 import { sourcesRouter } from './routes/sources.js'
 import { systemRouter } from './routes/system.js'
 import { waterRouter } from './routes/water.js'
@@ -29,6 +30,7 @@ export function createApp(): Express {
   app.use('/api/irrigation', irrigationRouter)
   app.use('/api/planning', planningRouter)
   app.use('/api/history', historyRouter)
+  app.use('/api/settings', settingsRouter)
 
   return app
 }

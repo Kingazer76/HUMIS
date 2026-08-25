@@ -1,4 +1,4 @@
-import { TANK_CONFIG } from '../config/seedData.js'
+import { getTankConfig } from '../config/farmSettings.js'
 import { AUTO_IRRIGATION_INTERVAL_MS } from '../env.js'
 import { deviceProvider } from '../providers/index.js'
 import { decideZoneIrrigation } from './irrigationEngine.js'
@@ -19,13 +19,14 @@ export async function runAutoIrrigationCycle(): Promise<void> {
   if (mode !== 'auto') return
 
   const [tank, zones] = await Promise.all([deviceProvider.getTankLevel(), deviceProvider.getZones()])
-  const tankLevelPct = (tank.levelL.value / TANK_CONFIG.capacityL) * 100
+  const tankConfig = getTankConfig()
+  const tankLevelPct = (tank.levelL.value / tankConfig.capacityL) * 100
 
   for (const zone of zones) {
     const decision = decideZoneIrrigation({
       zone,
       tankLevelPct,
-      criticalThresholdPct: TANK_CONFIG.criticalThresholdPct,
+      criticalThresholdPct: tankConfig.criticalThresholdPct,
     })
     if (decision.action === 'start' && !zone.state.active) {
       await safetyController.setZoneActive(zone.id, true, 'auto')

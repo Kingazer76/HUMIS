@@ -1,4 +1,6 @@
-import type { IrrigationZone } from '@aquaflow/shared'
+import { moistureTargetsForZone, type IrrigationZone } from '@aquaflow/shared'
+
+export { moistureTargetsForZone }
 
 export type ZoneDecisionAction = 'start' | 'stop' | 'hold'
 
@@ -37,8 +39,7 @@ export interface ZoneDecisionInput {
  */
 export function decideZoneIrrigation(input: ZoneDecisionInput): ZoneDecision {
   const { zone, tankLevelPct, criticalThresholdPct } = input
-  const minPct = zone.overrideMinPct ?? zone.crop.defaultMinMoisturePct
-  const maxPct = zone.overrideMaxPct ?? zone.crop.defaultMaxMoisturePct
+  const { minPct, maxPct } = moistureTargetsForZone(zone)
   const moisture = zone.state.soilMoisturePct.value
   const active = zone.state.active
 

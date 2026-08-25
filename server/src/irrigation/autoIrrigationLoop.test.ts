@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   CropProfile,
   IrrigationZone,
@@ -10,6 +10,7 @@ import type {
   WaterSource,
 } from '@aquaflow/shared'
 import type { DeviceProvider } from '../providers/deviceProvider.js'
+import { applyTankSettings, resetFarmSettingsForTests } from '../config/farmSettings.js'
 
 const maize: CropProfile = {
   id: 'maize',
@@ -101,6 +102,11 @@ vi.mock('../providers/index.js', () => ({
 describe('runAutoIrrigationCycle', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    resetFarmSettingsForTests()
+  })
+
+  afterEach(() => {
+    resetFarmSettingsForTests()
   })
 
   it('starts a dry zone automatically while in Auto mode', async () => {
@@ -135,6 +141,15 @@ describe('runAutoIrrigationCycle', () => {
   it('withholds starting a dry zone when the tank is at or below the critical threshold', async () => {
     fakeProvider = new FakeDeviceProvider([makeZone('cycle-critical', 20, false)])
     fakeProvider.tankLevelL = 1000 // well below critical (15% of 15,000L = 2,250L)
+    const { runAutoIrrigationCycle } = await import('./autoIrrigationLoop.js')
+    await runAutoIrrigationCycle()
+    expect(fakeProvider.setZoneValveCalls).toEqual([])
+  })
+
+  it('withholds starting a dry zone when Settings raises the stop-watering level above the current tank %', async () => {
+    applyTankSettings({ capacityL: 15000, lowThresholdPct: 90, criticalThresholdPct: 80 })
+    fakeProvider = new FakeDeviceProvider([makeZone('cycle-raised-critical', 20, false)])
+    fakeProvider.tankLevelL = 9000 // 60%
     const { runAutoIrrigationCycle } = await import('./autoIrrigationLoop.js')
     await runAutoIrrigationCycle()
     expect(fakeProvider.setZoneValveCalls).toEqual([])

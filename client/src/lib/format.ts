@@ -58,3 +58,9 @@ export function formatWateringAction(action: string): string {
   if (action === 'watering') return 'Watering'
   return 'Not watering'
 }
+
+export function formatIrrigationPreference(preference: string): string {
+  if (preference === 'water-saving') return 'Save water'
+  if (preference === 'aggressive') return 'Extra watering'
+  return 'Usual watering'
+}

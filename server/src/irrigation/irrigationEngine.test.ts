@@ -105,4 +105,33 @@ describe('decideZoneIrrigation', () => {
     // 35% is above the override minimum (30%) even though it's below the crop default (40%).
     expect(decision.action).toBe('hold')
   })
+
+  it('shifts start/stop targets down when the watering style is save-water', () => {
+    const saving: IrrigationZone = { ...zone(38, false), irrigationPreference: 'water-saving' }
+    // Crop default min is 40; save-water uses 35. 38% is still above 35, so hold.
+    expect(decideZoneIrrigation({ zone: saving, ...HEALTHY_TANK }).action).toBe('hold')
+    expect(decideZoneIrrigation({ zone: { ...saving, state: { ...saving.state, soilMoisturePct: { ...saving.state.soilMoisturePct, value: 35 } } }, ...HEALTHY_TANK }).action).toBe('start')
+  })
+
+  it('shifts start/stop targets up when the watering style is extra watering', () => {
+    const extra: IrrigationZone = { ...zone(44, false), irrigationPreference: 'aggressive' }
+    // Crop default min is 40; extra watering uses 45. 44% is dry enough to start.
+    expect(decideZoneIrrigation({ zone: extra, ...HEALTHY_TANK }).action).toBe('start')
+    const wetEnough: IrrigationZone = {
+      ...zone(65, true),
+      irrigationPreference: 'aggressive',
+    }
+    expect(decideZoneIrrigation({ zone: wetEnough, ...HEALTHY_TANK }).action).toBe('stop')
+  })
+
+  it('applies save-water on top of moisture overrides', () => {
+    const zoneWithBoth: IrrigationZone = {
+      ...zone(28, false),
+      irrigationPreference: 'water-saving',
+      overrideMinPct: 30,
+      overrideMaxPct: 50,
+    }
+    // Override min 30, then -5 → 25. 28% is still above 25.
+    expect(decideZoneIrrigation({ zone: zoneWithBoth, ...HEALTHY_TANK }).action).toBe('hold')
+  })
 })

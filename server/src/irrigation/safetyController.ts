@@ -1,5 +1,5 @@
 import type { IrrigationActionResult, IrrigationZone, OperationMode } from '@aquaflow/shared'
-import { TANK_CONFIG } from '../config/seedData.js'
+import { getTankConfig } from '../config/farmSettings.js'
 import { historyLog, zoneToHistoryInput } from '../history/historyLog.js'
 import { deviceProvider, simulatedProvider } from '../providers/index.js'
 
@@ -35,7 +35,7 @@ function isValidPercent(value: number): boolean {
 async function getTankLevelPct(): Promise<{ pct: number; stale: boolean }> {
   const tank = await deviceProvider.getTankLevel()
   return {
-    pct: (tank.levelL.value / TANK_CONFIG.capacityL) * 100,
+    pct: (tank.levelL.value / getTankConfig().capacityL) * 100,
     stale: isReadingStale(tank.levelL.asOf),
   }
 }
@@ -86,10 +86,10 @@ export const safetyController = {
       if (tankStale) {
         return { ok: false, reason: 'Tank level reading is stale; irrigation blocked for safety', zone }
       }
-      if (tankPct <= TANK_CONFIG.criticalThresholdPct) {
+      if (tankPct <= getTankConfig().criticalThresholdPct) {
         return {
           ok: false,
-          reason: `Tank level at or below critical threshold (${TANK_CONFIG.criticalThresholdPct}%); irrigation blocked`,
+          reason: `Tank level at or below critical threshold (${getTankConfig().criticalThresholdPct}%); irrigation blocked`,
           zone,
         }
       }
@@ -144,10 +144,10 @@ export const safetyController = {
     if (isOn) {
       const { pct, stale } = await getTankLevelPct()
       if (stale) return { ok: false, reason: 'Tank level reading is stale; pump start blocked for safety' }
-      if (pct <= TANK_CONFIG.criticalThresholdPct) {
+      if (pct <= getTankConfig().criticalThresholdPct) {
         return {
           ok: false,
-          reason: `Tank level at or below critical threshold (${TANK_CONFIG.criticalThresholdPct}%); pump start blocked`,
+          reason: `Tank level at or below critical threshold (${getTankConfig().criticalThresholdPct}%); pump start blocked`,
         }
       }
     }

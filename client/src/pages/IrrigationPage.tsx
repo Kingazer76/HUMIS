@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Activity, CloudRain, Database, Plus, Power, Settings2, Sprout } from '@/lib/icons'
-import type { IrrigationZone, OperationMode } from '@aquaflow/shared'
+import { moistureTargetsForZone, type IrrigationZone, type OperationMode } from '@aquaflow/shared'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -11,7 +11,7 @@ import { SectionCard } from '@/components/shared/SectionCard'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
-import { formatPercent } from '@/lib/format'
+import { formatIrrigationPreference, formatPercent } from '@/lib/format'
 
 interface ZoneCardProps {
   zone: IrrigationZone
@@ -21,8 +21,7 @@ interface ZoneCardProps {
 }
 
 function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
-  const minPct = zone.overrideMinPct ?? zone.crop.defaultMinMoisturePct
-  const maxPct = zone.overrideMaxPct ?? zone.crop.defaultMaxMoisturePct
+  const { minPct, maxPct } = moistureTargetsForZone(zone)
   const moisture = zone.state.soilMoisturePct.value
   const inRange = moisture >= minPct && moisture <= maxPct
 
@@ -35,7 +34,7 @@ function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
             {zone.name}
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {zone.crop.name} · priority {zone.crop.priority}
+            {zone.crop.name} · {formatIrrigationPreference(zone.irrigationPreference)}
           </p>
         </div>
         <StatusBadge tone={zone.state.active ? 'info' : inRange ? 'good' : 'warning'}>

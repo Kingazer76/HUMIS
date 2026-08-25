@@ -4,13 +4,26 @@ import type {
   IrrigationZone,
   OperationMode,
   PlanningSnapshot,
+  SettingsActionResult,
+  SettingsSnapshot,
   SystemSnapshot,
+  TankConfig,
   WaterSnapshot,
   WaterSource,
 } from '@aquaflow/shared'
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path)
+  if (!res.ok) throw new Error(`${path} responded with ${res.status}`)
+  return (await res.json()) as T
+}
+
+async function putJson<T>(path: string, body?: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  })
   if (!res.ok) throw new Error(`${path} responded with ${res.status}`)
   return (await res.json()) as T
 }
@@ -45,6 +58,22 @@ export const api = {
   getSystem: () => getJson<SystemSnapshot>('/api/system'),
   getPlanning: () => getJson<PlanningSnapshot>('/api/planning'),
   getHistory: () => getJson<HistorySnapshot>('/api/history'),
+  getSettings: () => getJson<SettingsSnapshot>('/api/settings'),
+
+  saveTank: (tank: TankConfig) => putJson<SettingsActionResult>('/api/settings/tank', tank),
+  restoreTankDefaults: () => postJson<SettingsActionResult>('/api/settings/tank/defaults'),
+  saveZone: (
+    zoneId: string,
+    body: {
+      name: string
+      cropId: string
+      irrigationPreference: IrrigationZone['irrigationPreference']
+      sensorMode?: IrrigationZone['sensorMode']
+      overrideMinPct?: number | null
+      overrideMaxPct?: number | null
+    },
+  ) => putJson<SettingsActionResult>(`/api/settings/zones/${zoneId}`, body),
+  resetZone: (zoneId: string) => postJson<SettingsActionResult>(`/api/settings/zones/${zoneId}/reset`),
 
   startZone: (zoneId: string) => postJson<IrrigationActionResult>(`/api/irrigation/${zoneId}/start`),
   stopZone: (zoneId: string) => postJson<IrrigationActionResult>(`/api/irrigation/${zoneId}/stop`),
