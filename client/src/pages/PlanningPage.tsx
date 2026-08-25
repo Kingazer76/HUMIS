@@ -61,10 +61,10 @@ export function PlanningPage() {
   const shortageVisual = planning ? deriveShortageVisualState(planning.tier) : undefined
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {planningError ? (
         <SectionCard
-          icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}
+          icon={<AlertTriangle className="h-4 w-4 text-warning" />}
           title="Can't reach the AquaFlow server"
           description="Planning numbers will appear once the connection is back. Retrying automatically."
         />
@@ -82,7 +82,7 @@ export function PlanningPage() {
         )}
       </SectionCard>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
         <MetricCard
           icon={<CalendarDays className="h-4 w-4" />}
           label="Days of water remaining"
@@ -123,7 +123,7 @@ export function PlanningPage() {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
         <SectionCard icon={<CloudSun className="h-4 w-4" />} title="Rain and weather">
           {weatherVisual ? (
             <VisualGlance

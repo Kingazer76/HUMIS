@@ -17,7 +17,7 @@ function Row({ label, value }: { label: string; value: string }) {
  */
 export function HistoricalDataCard({ record }: { record: HistoryRecord }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
+    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-sm font-medium text-foreground">{formatWhen(record.recordedAt)}</p>
         <EstimateBadge tag={record.tag} className="capitalize" />

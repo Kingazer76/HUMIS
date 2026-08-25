@@ -24,6 +24,10 @@
     --color-input: var(--input);
     --color-border: var(--border);
     --color-destructive: var(--destructive);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-warning: var(--warning);
+    --color-success-foreground: var(--success-foreground);
+    --color-success: var(--success);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -48,77 +52,85 @@
 }
 
 /*
-  AquaFlow V3 theme — matches the V1 prototype's visual language:
-  pale mint page background, white rounded cards, teal/green accent,
-  system font stack, flat colors (no gradients).
+  AquaFlow V3 theme — Phase 6 visual redesign.
+  Fresh mint page, off-white cards, deep teal actions, charcoal-green text.
+  Flat colors: no neon, no corporate blue, no heavy gradients.
 */
 :root {
-    --background: #eaf6ee;
-    --foreground: #1f2a24;
-    --card: #ffffff;
-    --card-foreground: #1f2a24;
-    --popover: #ffffff;
-    --popover-foreground: #1f2a24;
-    --primary: #00897b;
-    --primary-foreground: #ffffff;
-    --secondary: #e3f2ec;
-    --secondary-foreground: #1f2a24;
-    --muted: #eef6f0;
-    --muted-foreground: #6b7a72;
-    --accent: #d9f0e9;
-    --accent-foreground: #00695c;
-    --destructive: #dc2626;
-    --border: #e0e8e2;
-    --input: #e0e8e2;
-    --ring: #26a69a;
-    --chart-1: #00897b;
-    --chart-2: #26a69a;
-    --chart-3: #4db6ac;
-    --chart-4: #80cbc4;
-    --chart-5: #b2dfdb;
+    --background: #e5f2ec;
+    --foreground: #1a2b26;
+    --card: #fbfcfb;
+    --card-foreground: #1a2b26;
+    --popover: #fbfcfb;
+    --popover-foreground: #1a2b26;
+    --primary: #0f5f56;
+    --primary-foreground: #f7fffc;
+    --secondary: #dceee6;
+    --secondary-foreground: #1a2b26;
+    --muted: #e8f3ee;
+    --muted-foreground: #5e726a;
+    --accent: #cde6dc;
+    --accent-foreground: #0f5f56;
+    --destructive: #c45c4a;
+    --success: #2f7a52;
+    --success-foreground: #f4fbf6;
+    --warning: #b7791f;
+    --warning-foreground: #fff8ea;
+    --border: #b7cdc3;
+    --input: #b7cdc3;
+    --ring: #0f5f56;
+    --chart-1: #0f5f56;
+    --chart-2: #2f7a52;
+    --chart-3: #3d8f7c;
+    --chart-4: #b7791f;
+    --chart-5: #c45c4a;
     --radius: 0.75rem;
-    --sidebar: #ffffff;
-    --sidebar-foreground: #1f2a24;
-    --sidebar-primary: #00897b;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #d9f0e9;
-    --sidebar-accent-foreground: #00695c;
-    --sidebar-border: #e0e8e2;
-    --sidebar-ring: #26a69a;
+    --sidebar: #fbfcfb;
+    --sidebar-foreground: #1a2b26;
+    --sidebar-primary: #0f5f56;
+    --sidebar-primary-foreground: #f7fffc;
+    --sidebar-accent: #cde6dc;
+    --sidebar-accent-foreground: #0f5f56;
+    --sidebar-border: #b7cdc3;
+    --sidebar-ring: #0f5f56;
 }
 
 .dark {
-    --background: #0f1512;
-    --foreground: #eaf6ee;
-    --card: #17201b;
-    --card-foreground: #eaf6ee;
-    --popover: #17201b;
-    --popover-foreground: #eaf6ee;
-    --primary: #26a69a;
-    --primary-foreground: #0f1512;
-    --secondary: #1e2a24;
-    --secondary-foreground: #eaf6ee;
-    --muted: #1e2a24;
-    --muted-foreground: #9fb3a8;
+    --background: #0e1714;
+    --foreground: #e5f2ec;
+    --card: #15201c;
+    --card-foreground: #e5f2ec;
+    --popover: #15201c;
+    --popover-foreground: #e5f2ec;
+    --primary: #3d9a8a;
+    --primary-foreground: #0e1714;
+    --secondary: #1c2a25;
+    --secondary-foreground: #e5f2ec;
+    --muted: #1c2a25;
+    --muted-foreground: #8fa39a;
     --accent: #1e332c;
-    --accent-foreground: #4db6ac;
-    --destructive: #f87171;
-    --border: #24322b;
-    --input: #24322b;
-    --ring: #26a69a;
-    --chart-1: #00897b;
-    --chart-2: #26a69a;
-    --chart-3: #4db6ac;
-    --chart-4: #80cbc4;
-    --chart-5: #b2dfdb;
-    --sidebar: #17201b;
-    --sidebar-foreground: #eaf6ee;
-    --sidebar-primary: #26a69a;
-    --sidebar-primary-foreground: #0f1512;
+    --accent-foreground: #9fd4c6;
+    --destructive: #d67a6c;
+    --success: #5aaa72;
+    --success-foreground: #0e1714;
+    --warning: #d4a04a;
+    --warning-foreground: #0e1714;
+    --border: #2a3c35;
+    --input: #2a3c35;
+    --ring: #3d9a8a;
+    --chart-1: #3d9a8a;
+    --chart-2: #5aaa72;
+    --chart-3: #7eb9ab;
+    --chart-4: #d4a04a;
+    --chart-5: #d67a6c;
+    --sidebar: #15201c;
+    --sidebar-foreground: #e5f2ec;
+    --sidebar-primary: #3d9a8a;
+    --sidebar-primary-foreground: #0e1714;
     --sidebar-accent: #1e332c;
-    --sidebar-accent-foreground: #4db6ac;
-    --sidebar-border: #24322b;
-    --sidebar-ring: #26a69a;
+    --sidebar-accent-foreground: #9fd4c6;
+    --sidebar-border: #2a3c35;
+    --sidebar-ring: #3d9a8a;
 }
 
 @layer base {
@@ -126,7 +138,7 @@
     @apply border-border outline-ring/50;
     }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     }
   html {
     @apply font-sans;

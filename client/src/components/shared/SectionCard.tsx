@@ -17,7 +17,7 @@ export function SectionCard({ icon, title, description, action, children, classN
     <Card className={cn('gap-4', className)}>
       <CardHeader className="flex items-start justify-between gap-2">
         <div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <div className="flex items-center gap-2 text-base font-semibold text-foreground">
             {icon ? <span className="text-primary">{icon}</span> : null}
             {title}
           </div>

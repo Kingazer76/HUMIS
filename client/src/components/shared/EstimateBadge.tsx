@@ -10,10 +10,10 @@ const LABEL: Record<DataTag, string> = {
 }
 
 const STYLE: Record<DataTag, string> = {
-  measured: 'border-transparent bg-primary/10 text-primary',
-  estimated: 'border-transparent bg-amber-100 text-amber-800',
-  simulated: 'border-transparent bg-secondary text-muted-foreground',
-  forecast: 'border-transparent bg-sky-100 text-sky-800',
+  measured: 'border-success/35 bg-success/10 text-success',
+  estimated: 'border-warning/40 bg-warning/10 text-warning',
+  simulated: 'border-border bg-secondary text-muted-foreground',
+  forecast: 'border-primary/35 bg-primary/10 text-primary',
 }
 
 /**

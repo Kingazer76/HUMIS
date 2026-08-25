@@ -16,9 +16,10 @@ V3 combines:
   `DeviceProvider`, so a simulated farm today can become a real ESP32-driven farm later
   without a redesign.
 
-This repository is being built in staged phases. **Phases 0–3, 4A–4C, and 5 are complete.**
-Settings writes live farm numbers. Overview, Irrigation, Water, and Planning now lead with
-simple pictures and plain-language status, with the original numbers kept as smaller detail.
+This repository is being built in staged phases. **Phases 0–6 are complete.**
+Settings writes live farm numbers. Overview, Irrigation, Water, and Planning lead with
+simple pictures and plain-language status. Phase 6 restyles the screens with a mint-and-teal
+farm look; Ghanaian symbols are not in this phase.
 
 ## Why a flow-sensor disclaimer matters
 
@@ -89,7 +90,8 @@ shortage result from tank level and usage.
 - [x] **Phase 4** — Planning, History, and Settings. **4A–4C done.**
 - [x] **Phase 5** — Farmer-friendly visual intelligence: soil/tank/weather/irrigation
       pictures mapped from existing readings and thresholds (no new calculations).
-- [ ] **Phase 6** — African-inspired visual polish (plan only).
+- [x] **Phase 6** — Visual redesign: mint page, deep teal actions, outlined tabs, clearer
+      cards and badges. Ghanaian/Adinkra motifs are not included yet.
 - [ ] **Phase 7** — AquaFlow Assistant (text chat), actions routed through the safety controller.
 - [ ] **Phase 8** — Khaya-backed speech recognition, translation, and text-to-speech.
 - [ ] **Phase 9 (deferred)** — real ESP32 hardware integration. Not started; `USE_SIMULATED`

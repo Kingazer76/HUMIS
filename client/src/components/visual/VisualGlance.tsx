@@ -11,10 +11,10 @@ export function VisualGlance({
   detail?: ReactNode
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-4">
       <div className="shrink-0">{illustration}</div>
       <div className="min-w-0">
-        <p className="text-lg font-semibold leading-tight text-foreground">{headline}</p>
+        <p className="text-lg font-semibold leading-snug text-foreground">{headline}</p>
         {detail !== undefined ? <div className="mt-0.5 text-sm text-muted-foreground">{detail}</div> : null}
       </div>
     </div>

@@ -27,8 +27,8 @@ function FlowStep({
   tag?: DataTag
 }) {
   return (
-    <div className="flex flex-1 items-center gap-3 rounded-lg bg-muted/60 p-3">
-      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-card text-primary">{icon}</span>
+    <div className="flex flex-1 items-center gap-3 rounded-lg border border-border bg-card p-3">
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-primary">{icon}</span>
       <div>
         <div className="flex items-center gap-1.5">
           {value !== undefined ? (
@@ -100,7 +100,7 @@ export function WaterPage() {
       : undefined
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <SectionCard
         icon={<Droplets className="h-4 w-4" />}
         title="Water flow — in → stored → used"
@@ -131,7 +131,7 @@ export function WaterPage() {
         </div>
       </SectionCard>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
         <SectionCard icon={<Gauge className="h-4 w-4" />} title="Supply monitoring">
           {tankVisual ? (
             <div className="mb-4">
@@ -142,7 +142,7 @@ export function WaterPage() {
               />
             </div>
           ) : null}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-5">
             <MonitoringRow
               icon={<Gauge className="h-4 w-4" />}
               label="How much the tank holds"
@@ -180,7 +180,7 @@ export function WaterPage() {
             </Button>
           }
         >
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-5">
             {sources?.map((source) => <SourceRow key={source.id} source={source} />) ??
               Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
           </div>

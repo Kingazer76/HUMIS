@@ -12,20 +12,20 @@ function HistoryTable({ records }: { records: HistoryRecord[] }) {
     <div className="overflow-x-auto">
       <table className="w-full min-w-[40rem] text-left text-sm">
         <thead>
-          <tr className="border-b border-border text-muted-foreground">
-            <th className="py-2 pr-3 font-medium">Time</th>
-            <th className="py-2 pr-3 font-medium">Field</th>
-            <th className="py-2 pr-3 font-medium">Crop</th>
-            <th className="py-2 pr-3 font-medium">Soil</th>
-            <th className="py-2 pr-3 font-medium">Watering</th>
-            <th className="py-2 pr-3 font-medium">Water used</th>
-            <th className="py-2 font-medium">Source</th>
+          <tr className="border-b border-border bg-muted/40 text-muted-foreground">
+            <th className="py-2.5 pr-3 font-medium">Time</th>
+            <th className="py-2.5 pr-3 font-medium">Field</th>
+            <th className="py-2.5 pr-3 font-medium">Crop</th>
+            <th className="py-2.5 pr-3 font-medium">Soil</th>
+            <th className="py-2.5 pr-3 font-medium">Watering</th>
+            <th className="py-2.5 pr-3 font-medium">Water used</th>
+            <th className="py-2.5 font-medium">Source</th>
           </tr>
         </thead>
         <tbody>
           {records.map((record) => (
             <tr key={record.id} className="border-b border-border/60">
-              <td className="py-2 pr-3 text-foreground">{formatWhen(record.recordedAt)}</td>
+              <td className="py-2.5 pr-3 text-foreground">{formatWhen(record.recordedAt)}</td>
               <td className="py-2 pr-3 font-medium text-foreground">{record.zoneName}</td>
               <td className="py-2 pr-3 text-foreground">{record.cropName}</td>
               <td className="py-2 pr-3 text-foreground">{formatSoilCondition(record.soilCondition)}</td>
@@ -48,10 +48,10 @@ export function HistoryPage() {
   const { data: history, error } = usePolling(api.getHistory)
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {error ? (
         <SectionCard
-          icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}
+          icon={<AlertTriangle className="h-4 w-4 text-warning" />}
           title="Can't reach the AquaFlow server"
           description="History will appear once the connection is back. Retrying automatically."
         />

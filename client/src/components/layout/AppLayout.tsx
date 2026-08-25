@@ -7,8 +7,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-svh bg-background">
       <div className="mx-auto flex min-h-svh max-w-6xl flex-col px-4 sm:px-6">
         <AppHeader />
-        <TabNav />
-        <main className="flex-1 py-6">{children}</main>
+        <div className="pt-4">
+          <TabNav />
+        </div>
+        <main className="flex-1 py-5 sm:py-6">{children}</main>
       </div>
     </div>
   )

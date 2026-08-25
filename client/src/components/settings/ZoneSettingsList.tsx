@@ -123,7 +123,7 @@ export function ZoneSettingsList({ zones, crops, disabled, onSaved }: ZoneSettin
         ))}
       </div>
       {message ? (
-        <p className={`mt-2 text-sm ${ok ? 'text-muted-foreground' : 'text-red-600'}`}>{message}</p>
+        <p className={`mt-2 text-sm ${ok ? 'text-muted-foreground' : 'text-destructive'}`}>{message}</p>
       ) : null}
 
       <Dialog open={editing !== null} onOpenChange={(open) => { if (!open && !pending) setEditing(null) }}>
@@ -201,7 +201,7 @@ export function ZoneSettingsList({ zones, crops, disabled, onSaved }: ZoneSettin
               The dry number must be below the wet-enough number. AquaFlow starts watering at the dry number and stops at the wet-enough number.
             </p>
             {editing && message ? (
-              <p className={`text-sm ${ok ? 'text-muted-foreground' : 'text-red-600'}`}>{message}</p>
+              <p className={`text-sm ${ok ? 'text-muted-foreground' : 'text-destructive'}`}>{message}</p>
             ) : null}
           </div>
           <DialogFooter>

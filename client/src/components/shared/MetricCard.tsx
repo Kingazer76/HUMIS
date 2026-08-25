@@ -25,7 +25,7 @@ export function MetricCard({ icon, label, badge, value, hint, glance, className 
   return (
     <Card className={cn('gap-3', className)}>
       <CardHeader className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground">
           <span className="text-primary">{icon}</span>
           {label}
         </div>
@@ -35,11 +35,11 @@ export function MetricCard({ icon, label, badge, value, hint, glance, className 
         {glance ? (
           <div className="flex flex-col gap-2">
             {glance}
-            {value !== undefined ? <div className="text-sm text-muted-foreground">{value}</div> : null}
+            {value !== undefined ? <div className="text-sm font-medium text-muted-foreground">{value}</div> : null}
             {hint !== undefined ? <div className="text-sm text-muted-foreground">{hint}</div> : null}
           </div>
         ) : value !== undefined ? (
-          <div className="text-3xl font-bold tracking-tight text-foreground">{value}</div>
+          <div className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{value}</div>
         ) : (
           <Skeleton className="h-8 w-24" />
         )}

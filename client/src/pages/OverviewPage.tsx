@@ -73,16 +73,16 @@ export function OverviewPage() {
   const shortageAlert = shortageVisual === 'critical' || shortageVisual === 'high'
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {waterError || planningError ? (
         <SectionCard
-          icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}
+          icon={<AlertTriangle className="h-4 w-4 text-warning" />}
           title="Can't reach the AquaFlow server"
           description="Showing the last known state where possible. Retrying automatically."
         />
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-3">
         <MetricCard
           icon={<Droplets className="h-4 w-4" />}
           label="Water level"
@@ -136,7 +136,7 @@ export function OverviewPage() {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-3">
         <MetricCard
           icon={<Sprout className="h-4 w-4" />}
           label="Field watering"
@@ -179,7 +179,7 @@ export function OverviewPage() {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
         <SectionCard icon={<CloudSun className="h-4 w-4" />} title="Weather summary">
           {weatherVisual ? (
             <VisualGlance

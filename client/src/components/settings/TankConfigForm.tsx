@@ -113,7 +113,7 @@ export function TankConfigForm({ tank, disabled, onSaved }: TankConfigFormProps)
         </Button>
       </div>
       {message ? (
-        <p className={`mt-2 text-sm ${ok ? 'text-muted-foreground' : 'text-red-600'}`}>{message}</p>
+        <p className={`mt-2 text-sm ${ok ? 'text-muted-foreground' : 'text-destructive'}`}>{message}</p>
       ) : null}
     </>
   )

@@ -45,7 +45,7 @@ function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
     <Card className="gap-3">
       <CardHeader className="flex items-start justify-between gap-2">
         <div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <div className="flex items-center gap-2 text-base font-semibold text-foreground">
             <Sprout className="h-4 w-4 text-primary" />
             {zone.name}
           </div>
@@ -97,7 +97,7 @@ function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
             Reset
           </Button>
         </div>
-        {actionError ? <p className="text-xs text-red-600">{actionError}</p> : null}
+        {actionError ? <p className="text-xs text-destructive">{actionError}</p> : null}
       </CardContent>
     </Card>
   )
@@ -193,8 +193,8 @@ export function IrrigationPage() {
   const isManual = system?.system.operationMode === 'manual'
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-3">
+    <div className="flex flex-col gap-5">
+      <div className="grid gap-5 sm:grid-cols-3">
         <MetricCard
           icon={<Sprout className="h-4 w-4" />}
           label="Soil"
@@ -252,7 +252,7 @@ export function IrrigationPage() {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
         <SectionCard icon={<Power className="h-4 w-4" />} title="Water flow">
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-primary">
@@ -275,7 +275,7 @@ export function IrrigationPage() {
         </SectionCard>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2">
         <SectionCard icon={<Settings2 className="h-4 w-4" />} title="Watering mode">
           <div className="flex gap-2">
             <Button
@@ -300,7 +300,7 @@ export function IrrigationPage() {
               ? 'Automatic watering is paused. Use "Water now" or the buttons here to water by hand.'
               : 'The farm waters on its own from the soil and the stored water.'}
           </p>
-          {modeAction.error ? <p className="mt-1 text-xs text-red-600">{modeAction.error}</p> : null}
+          {modeAction.error ? <p className="mt-1 text-xs text-destructive">{modeAction.error}</p> : null}
         </SectionCard>
         <SectionCard icon={<Power className="h-4 w-4" />} title="Manual pump control">
           <div className="flex gap-2">
@@ -324,7 +324,7 @@ export function IrrigationPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             {isManual ? 'These buttons turn the water on or off.' : 'Switch to Manual to water by hand.'}
           </p>
-          {pumpAction.error ? <p className="mt-1 text-xs text-red-600">{pumpAction.error}</p> : null}
+          {pumpAction.error ? <p className="mt-1 text-xs text-destructive">{pumpAction.error}</p> : null}
         </SectionCard>
       </div>
 
@@ -338,7 +338,7 @@ export function IrrigationPage() {
           </Button>
         }
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2">
           {zones?.map((zone) => (
             <ZoneCard
               key={zone.id}

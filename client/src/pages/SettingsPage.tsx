@@ -36,7 +36,7 @@ export function SettingsPage() {
   const loading = data === undefined && error === undefined
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <SectionCard
         icon={<Settings2 className="h-4 w-4" />}
         title="Main tank configuration"
@@ -50,7 +50,7 @@ export function SettingsPage() {
           />
         ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label htmlFor="tank-capacity">Tank capacity (L)</Label>
                 <Input id="tank-capacity" placeholder="15000" disabled />

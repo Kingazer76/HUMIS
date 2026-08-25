@@ -6,11 +6,11 @@ import { cn } from '@/lib/utils'
 export type StatusTone = 'good' | 'warning' | 'critical' | 'info' | 'neutral'
 
 const STYLE: Record<StatusTone, string> = {
-  good: 'border-transparent bg-primary/10 text-primary',
-  warning: 'border-transparent bg-amber-100 text-amber-800',
-  critical: 'border-transparent bg-red-100 text-red-700',
-  info: 'border-transparent bg-sky-100 text-sky-800',
-  neutral: 'border-transparent bg-secondary text-muted-foreground',
+  good: 'border-success/35 bg-success/10 text-success',
+  warning: 'border-warning/40 bg-warning/10 text-warning',
+  critical: 'border-destructive/40 bg-destructive/10 text-destructive',
+  info: 'border-primary/35 bg-primary/10 text-primary',
+  neutral: 'border-border bg-secondary text-muted-foreground',
 }
 
 const SHORTAGE_TIER_TONE: Record<ShortageTier, StatusTone> = {
@@ -25,10 +25,10 @@ export function shortageTierTone(tier: ShortageTier): StatusTone {
   return SHORTAGE_TIER_TONE[tier]
 }
 
-/** V1's small status pills (NORMAL, OK, CLEAR, Waiting, Irrigating, ...), color-coded by tone. */
+/** Small status pills, color-coded by tone. Wording stays as passed in. */
 export function StatusBadge({ tone, children }: { tone: StatusTone; children: ReactNode }) {
   return (
-    <Badge variant="outline" className={cn(STYLE[tone], 'uppercase tracking-wide')}>
+    <Badge variant="outline" className={cn(STYLE[tone])}>
       {children}
     </Badge>
   )
