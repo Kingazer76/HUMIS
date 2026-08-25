@@ -2,6 +2,7 @@ import type {
   IrrigationActionResult,
   IrrigationZone,
   OperationMode,
+  PlanningSnapshot,
   SystemSnapshot,
   WaterSnapshot,
   WaterSource,
@@ -41,6 +42,7 @@ export const api = {
   getSources: () => getJson<WaterSource[]>('/api/sources'),
   getZones: () => getJson<IrrigationZone[]>('/api/zones'),
   getSystem: () => getJson<SystemSnapshot>('/api/system'),
+  getPlanning: () => getJson<PlanningSnapshot>('/api/planning'),
 
   startZone: (zoneId: string) => postJson<IrrigationActionResult>(`/api/irrigation/${zoneId}/start`),
   stopZone: (zoneId: string) => postJson<IrrigationActionResult>(`/api/irrigation/${zoneId}/stop`),

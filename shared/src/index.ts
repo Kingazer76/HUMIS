@@ -148,4 +148,28 @@ export interface IrrigationActionResult {
   zone?: IrrigationZone
 }
 
-export const AQUAFLOW_SHARED_VERSION = '0.2.0'
+export type ShortageTier = 'low' | 'moderate' | 'high' | 'critical'
+
+/**
+ * Response shape for GET /api/planning. `daysRemaining` is tagged
+ * `forecast` (it's a projection, not a measurement or even a direct
+ * estimate). `weatherApplied` tells the UI whether the weather provider was
+ * reachable for this calculation — `false` is a normal, safe outcome, not
+ * an error; the prediction is always valid either way.
+ *
+ * `sevenDayAverageConsumptionL` is the unadjusted rolling average (up to
+ * 7 simulated days of observed usage). `adjustedDailyConsumptionL` is that
+ * same figure after the optional weather multiplier.
+ */
+export interface PlanningSnapshot {
+  daysRemaining: Tagged<number>
+  tier: ShortageTier
+  reason: string
+  sevenDayAverageConsumptionL: Tagged<number>
+  adjustedDailyConsumptionL: Tagged<number>
+  weatherApplied: boolean
+  /** How many simulated days of usage the 7-day average was computed over (0–7, may be fractional). */
+  observedDays: number
+}
+
+export const AQUAFLOW_SHARED_VERSION = '0.4.0'

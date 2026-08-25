@@ -1,25 +1,24 @@
 # AquaFlow V3
 
 AquaFlow is a low-cost smart water-management system for farms in Ghana. It helps
-farmers monitor water, manage irrigation, conserve water, predict shortages, and
-(from Phase 5 onward) interact with the system through an accessible, Ghanaian-language
-AI assistant.
+farmers monitor water, manage irrigation, conserve water, and predict shortages.
+Later phases add a Ghanaian-language assistant; this repository is still
+simulation-based.
 
 V3 combines:
 
 - **V1's water-management foundation** — dashboard, main tank + external water sources,
   crop-specific irrigation zones, irrigation controls, water-in/stored/used accounting,
-  days-of-water-remaining, shortage prediction, weather-aware planning, and conservation mode.
+  days-of-water-remaining, and shortage prediction.
 - **V2's inclusivity goals** — a chatbot with Ghanaian-language voice support (via Khaya AI),
-  integrated directly into the existing dashboard rather than as a separate app.
+  planned for later phases, integrated into the existing dashboard rather than as a separate app.
 - **Real-hardware readiness** — every sensor/actuator interaction goes through a swappable
   `DeviceProvider`, so a simulated farm today can become a real ESP32-driven farm later
   without a redesign.
 
-This repository is being built in the staged phases described in the project's implementation
-plan (Phase 0 → Phase 6, with real ESP32 hardware integration explicitly deferred to a future
-Phase 7). **This is Phase 0**: the visual shell only — six tabs, V1's look and feel, and
-placeholder cards. No real or simulated farm data exists yet.
+This repository is being built in staged phases. **Phases 0–3 are complete.** This slice is
+**Phase 4A only**: planning + shortage prediction. History, Settings, the assistant, Khaya,
+and ESP32 hardware are not in this slice.
 
 ## Why a flow-sensor disclaimer matters
 
@@ -32,9 +31,9 @@ presenting an estimate as if it were a real sensor reading.
 
 - **`client/`** — React + Vite + TypeScript + Tailwind CSS + shadcn/ui. Renders the six tabs
   (Overview, Irrigation, Water, Planning, History, Settings) via `react-router-dom`.
-- **`server/`** — Node + Express + TypeScript. Holds the (future) simulation loop, the water/
-  irrigation domain logic, and any secrets (e.g. a future Khaya API key) that must never reach
-  the browser bundle.
+- **`server/`** — Node + Express + TypeScript. Holds the simulation loop, the water/
+  irrigation domain logic, planning/shortage prediction, and any secrets (e.g. a future Khaya
+  API key) that must never reach the browser bundle.
 - **`shared/`** — TypeScript types shared between `client` and `server`.
 
 npm workspaces tie the three packages together — there's no separate build tooling beyond npm.
@@ -49,7 +48,8 @@ npm run dev        # starts both the client (Vite) and the server (Express) toge
 ```
 
 - Client (the app you open in a browser): **http://localhost:5417**
-- Server (API only, currently just a health check): **http://localhost:5418/api/health**
+- Server (API): **http://localhost:5418/api/health**
+- Planning API: **http://localhost:5418/api/planning**
 
 The Vite dev server proxies any `/api/*` request to the Express server, so the browser only
 ever talks to port 5417.
@@ -67,19 +67,30 @@ Build everything (type-checks + production bundles):
 npm run build
 ```
 
+Run the server test suite (includes shortage-prediction and weather fail-safe tests):
+
+```bash
+npm test --workspace server
+```
+
+Simulation state lives in memory inside the Express process. Restarting the server resets the
+farm. Weather is optional: if the weather provider is missing, returns nothing, or throws,
+planning still returns a valid days-remaining / shortage result from tank level and usage.
+
 ## Project status
 
 - [x] **Phase 0** — project scaffold, V1-matching visual shell, six placeholder tabs.
-- [ ] **Phase 1** — domain types, `SimulatedDeviceProvider`, water-accounting math, data APIs.
-- [ ] **Phase 2** — Overview and Water tabs wired to simulated data, with explicit
+- [x] **Phase 1** — domain types, `SimulatedDeviceProvider`, water-accounting math, data APIs.
+- [x] **Phase 2** — Overview and Water tabs wired to simulated data, with explicit
       measured/estimated/simulated labeling.
-- [ ] **Phase 3** — Irrigation tab, hysteresis-based irrigation engine, and the single
+- [x] **Phase 3** — Irrigation tab, hysteresis-based irrigation engine, and the single
       safety-controller choke point for every pump/valve action.
-- [ ] **Phase 4** — Planning, History, and Settings tabs; weather-aware shortage prediction
-      that degrades safely if weather data is unavailable.
-- [ ] **Phase 5** — AquaFlow Assistant (text chat) answering from real farm data, with actions
-      routed through the same safety controller as manual controls.
-- [ ] **Phase 6** — Khaya-backed speech recognition, translation, and text-to-speech, with a
-      graceful "voice unavailable, please type" fallback.
-- [ ] **Phase 7 (deferred)** — real ESP32 hardware integration. Not started; `USE_SIMULATED`
+- [ ] **Phase 4** — Planning, History, and Settings. **4A done** (weather provider,
+      shortage prediction, `/api/planning`, Overview/Planning days-remaining and shortage
+      risk). **4B not started** (History tab, Settings tab).
+- [ ] **Phase 5** — Farmer-friendly visual intelligence (plan only).
+- [ ] **Phase 6** — African-inspired visual polish (plan only).
+- [ ] **Phase 7** — AquaFlow Assistant (text chat), actions routed through the safety controller.
+- [ ] **Phase 8** — Khaya-backed speech recognition, translation, and text-to-speech.
+- [ ] **Phase 9 (deferred)** — real ESP32 hardware integration. Not started; `USE_SIMULATED`
       stays `true` until this is explicitly requested.

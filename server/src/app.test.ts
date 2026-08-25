@@ -55,6 +55,22 @@ describe('GET /api/zones', () => {
   })
 })
 
+describe('GET /api/planning', () => {
+  it('returns a valid, safely-tagged shortage prediction end-to-end against the real seeded farm', async () => {
+    const res = await request(app).get('/api/planning')
+    expect(res.status).toBe(200)
+    expect(res.body.daysRemaining.tag).toBe('forecast')
+    expect(typeof res.body.daysRemaining.value).toBe('number')
+    expect(res.body.daysRemaining.value).toBeGreaterThanOrEqual(0)
+    expect(['low', 'moderate', 'high', 'critical']).toContain(res.body.tier)
+    expect(res.body.adjustedDailyConsumptionL.tag).toBe('estimated')
+    expect(res.body.sevenDayAverageConsumptionL.tag).toBe('estimated')
+    expect(typeof res.body.weatherApplied).toBe('boolean')
+    expect(typeof res.body.observedDays).toBe('number')
+    expect(res.body.observedDays).toBeGreaterThanOrEqual(0)
+  })
+})
+
 describe('GET /api/system', () => {
   it('returns tagged rain, pump, and system status', async () => {
     const res = await request(app).get('/api/system')

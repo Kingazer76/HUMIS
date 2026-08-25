@@ -18,6 +18,11 @@ import {
   TANK_CONFIG,
   WATER_SOURCE_CONFIGS,
 } from '../config/seedData.js'
+import {
+  emptyRollingWindow,
+  recordConsumption,
+  type RollingConsumptionWindow,
+} from '../forecast/shortagePrediction.js'
 import type { DeviceProvider } from './deviceProvider.js'
 import { ACTIVE_FLOW_INPUT_SOURCE } from './flowInputSource.js'
 
@@ -80,8 +85,11 @@ export class SimulatedDeviceProvider implements DeviceProvider {
 
   private cumulativeInflowL = 0
   private cumulativeUsedL = 0
+  private simulatedMinutesElapsed = 0
   private lastWaterInLPerMin = 0
   private lastWaterUsedLPerMin = 0
+  /** Last-7-simulated-days usage buckets for shortage prediction. Not a history log. */
+  private rollingConsumption = emptyRollingWindow()
 
   private cropById = new Map<string, CropProfile>(CROP_PROFILES.map((c) => [c.id, c]))
   private zoneConfigById = new Map<string, IrrigationZoneConfig>(
@@ -140,6 +148,8 @@ export class SimulatedDeviceProvider implements DeviceProvider {
     this.tankLevelL = clamp(this.tankLevelL + waterInL - waterUsedL, 0, TANK_CONFIG.capacityL)
     this.cumulativeInflowL += waterInL
     this.cumulativeUsedL += waterUsedL
+    this.simulatedMinutesElapsed += elapsedMinutes
+    this.rollingConsumption = recordConsumption(this.rollingConsumption, waterUsedL, elapsedMinutes)
     this.lastWaterInLPerMin = elapsedMinutes > 0 ? waterInL / elapsedMinutes : 0
     this.lastWaterUsedLPerMin = elapsedMinutes > 0 ? waterUsedL / elapsedMinutes : 0
 
@@ -246,7 +256,25 @@ export class SimulatedDeviceProvider implements DeviceProvider {
     this.operationMode = mode
   }
 
-  // --- internals exposed for waterAccounting / tests --------------------
+  // --- internals exposed for waterAccounting / shortagePrediction / tests --------------------
+
+  /** Total simulated minutes advanced since this provider was constructed. */
+  getSimulatedMinutesElapsed(): number {
+    return this.simulatedMinutesElapsed
+  }
+
+  /**
+   * Rolling 7-day usage window for `shortagePrediction`. This is not the
+   * History tab's log — it only keeps enough buckets to average recent
+   * consumption, and resets when the process restarts.
+   */
+  getRollingConsumptionWindow(): RollingConsumptionWindow {
+    return {
+      completedDaysUsedL: [...this.rollingConsumption.completedDaysUsedL],
+      currentDayUsedL: this.rollingConsumption.currentDayUsedL,
+      currentDayMinutes: this.rollingConsumption.currentDayMinutes,
+    }
+  }
 
   getCumulativeTotalsL(): { inflowL: number; usedL: number } {
     return { inflowL: this.cumulativeInflowL, usedL: this.cumulativeUsedL }

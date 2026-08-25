@@ -10,29 +10,36 @@ import {
 import { EstimateBadge } from '@/components/shared/EstimateBadge'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionCard } from '@/components/shared/SectionCard'
-import { StatusBadge } from '@/components/shared/StatusBadge'
+import { StatusBadge, shortageTierTone } from '@/components/shared/StatusBadge'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
-import { formatLiters, formatRate } from '@/lib/format'
+import { formatDays, formatLiters, formatRate, formatTierLabel } from '@/lib/format'
 
 /**
- * V1's Overview tab. Phase 1 wires the numbers this data layer can honestly
- * answer right now (tank/sources/flow, zone read-status, pump/rain/system
- * status). Days remaining and shortage risk need the weather-aware
- * forecasting engine that arrives in Phase 4, so they stay as
- * "not available yet" placeholders rather than guessed numbers.
+ * V1's Overview tab. Days remaining and shortage risk are wired to
+ * Phase 4's `shortagePrediction` (GET /api/planning) — both are always a
+ * valid, safely-computed result even when the weather forecast is
+ * unavailable (the `weatherApplied` flag on the response tells the UI
+ * which case it is, but never blocks the number itself).
  */
 export function OverviewPage() {
   const { data: water, error: waterError } = usePolling(api.getWater)
   const { data: zones } = usePolling(api.getZones)
   const { data: system } = usePolling(api.getSystem)
+  const { data: planning, error: planningError } = usePolling(api.getPlanning)
 
   const projectedDemandLPerMin =
     zones?.reduce((sum, zone) => sum + zone.nominalOutflowRateLPerMin, 0) ?? undefined
 
+  const tankIsCritical =
+    water !== undefined &&
+    water.mainTankL.value / water.tank.capacityL < water.tank.criticalThresholdPct / 100
+  const shortageAlert =
+    planning !== undefined && (planning.tier === 'critical' || planning.tier === 'high')
+
   return (
     <div className="flex flex-col gap-4">
-      {waterError ? (
+      {waterError || planningError ? (
         <SectionCard
           icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}
           title="Can't reach the AquaFlow server"
@@ -60,8 +67,15 @@ export function OverviewPage() {
         <MetricCard
           icon={<CalendarDays className="h-4 w-4" />}
           label="Days remaining"
-          value="—"
-          hint="Needs weather-aware forecasting (Phase 4)"
+          badge={planning ? <EstimateBadge tag={planning.daysRemaining.tag} /> : undefined}
+          value={planning ? formatDays(planning.daysRemaining.value) : undefined}
+          hint={
+            planning
+              ? planning.weatherApplied
+                ? 'Weather forecast available'
+                : 'Weather forecast unavailable — based on usage data only'
+              : undefined
+          }
         />
       </div>
 
@@ -73,7 +87,13 @@ export function OverviewPage() {
           value={projectedDemandLPerMin !== undefined ? formatRate(projectedDemandLPerMin) : undefined}
           hint="Combined nominal flow when all zones are irrigating."
         />
-        <MetricCard icon={<AlertTriangle className="h-4 w-4" />} label="Shortage risk" value="—" hint="Arrives in Phase 4" />
+        <MetricCard
+          icon={<AlertTriangle className="h-4 w-4" />}
+          label="Shortage risk"
+          badge={planning ? <StatusBadge tone={shortageTierTone(planning.tier)}>{planning.tier}</StatusBadge> : undefined}
+          value={planning ? formatTierLabel(planning.tier) : undefined}
+          hint={planning?.reason}
+        />
         <MetricCard
           icon={<ToggleLeft className="h-4 w-4" />}
           label="Irrigation mode"
@@ -89,14 +109,28 @@ export function OverviewPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <SectionCard icon={<CloudSun className="h-4 w-4" />} title="Weather summary" description="Arrives in Phase 4." />
+        <SectionCard
+          icon={<CloudSun className="h-4 w-4" />}
+          title="Weather summary"
+          description={
+            planning
+              ? planning.weatherApplied
+                ? 'A weather forecast is available and may slightly adjust days remaining. Irrigation still runs from tank and soil readings if weather drops out.'
+                : 'Weather forecast unavailable. Days remaining and shortage risk still use main-tank water and recent usage.'
+              : undefined
+          }
+        />
         <SectionCard
           icon={<AlertTriangle className="h-4 w-4" />}
           title="Active alerts"
           description={
-            water && water.mainTankL.value / water.tank.capacityL < water.tank.criticalThresholdPct / 100
+            tankIsCritical
               ? 'Tank is at or below the critical threshold.'
-              : 'No active alerts. All systems normal.'
+              : shortageAlert && planning
+                ? planning.reason
+                : water
+                  ? 'No active alerts. All systems normal.'
+                  : undefined
           }
         />
       </div>

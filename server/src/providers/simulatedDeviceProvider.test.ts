@@ -70,6 +70,33 @@ describe('SimulatedDeviceProvider', () => {
     expect(provider.getFlowInputSource()).toBe('configured-rate')
   })
 
+  it('accumulates simulated minutes elapsed across ticks (used by shortagePrediction for a daily-rate estimate)', () => {
+    expect(provider.getSimulatedMinutesElapsed()).toBe(0)
+    provider.tick(5)
+    provider.tick(3)
+    expect(provider.getSimulatedMinutesElapsed()).toBe(8)
+  })
+
+  it('records irrigation usage into the rolling 7-day consumption window used by planning', async () => {
+    expect(provider.getRollingConsumptionWindow()).toEqual({
+      completedDaysUsedL: [],
+      currentDayUsedL: 0,
+      currentDayMinutes: 0,
+    })
+
+    await provider.setZoneValve('zone-a', true)
+    provider.tick(10)
+    const partial = provider.getRollingConsumptionWindow()
+    expect(partial.completedDaysUsedL).toEqual([])
+    expect(partial.currentDayMinutes).toBe(10)
+    expect(partial.currentDayUsedL).toBeGreaterThan(0)
+
+    provider.tick(24 * 60)
+    const afterADay = provider.getRollingConsumptionWindow()
+    expect(afterADay.completedDaysUsedL.length).toBe(1)
+    expect(afterADay.currentDayMinutes).toBe(10)
+  })
+
   it('produces rain events over enough ticks (probabilistic, seeded via repeated trials)', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0) // forces the 8%-chance branch to fire immediately
     provider.tick(1)
