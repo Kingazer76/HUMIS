@@ -17,9 +17,8 @@ V3 combines:
   without a redesign.
 
 This repository is being built in staged phases. **Phases 0–6 are complete.**
-Settings writes live farm numbers. Overview, Irrigation, Water, and Planning lead with
-simple pictures and plain-language status. Phase 6 restyles the screens with a mint-and-teal
-farm look; Ghanaian symbols are not in this phase.
+Settings writes live farm numbers. Overview leads with water, crops, weather, shortage,
+days remaining, and watering status, with healthy / warning / critical colors on those cards.
 
 ## Why a flow-sensor disclaimer matters
 
