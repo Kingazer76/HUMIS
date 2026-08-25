@@ -187,7 +187,7 @@ export function predictShortage(input: ShortagePredictionInput): PlanningSnapsho
   const availableL = Math.max(0, input.availableTankL)
   const tankPct = input.tankCapacityL > 0 ? (availableL / input.tankCapacityL) * 100 : 0
   const sevenDayAverageL = Math.max(0, input.dailyConsumptionL)
-  const observedDays = Math.max(0, input.observedDays ?? 0)
+  const observedDays = Math.round(Math.max(0, input.observedDays ?? 0) * 10000) / 10000
 
   const weatherApplied =
     input.weatherAdjustment != null && Number.isFinite(input.weatherAdjustment.demandMultiplier)

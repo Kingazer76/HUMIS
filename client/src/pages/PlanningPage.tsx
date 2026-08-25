@@ -7,8 +7,11 @@ import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
 import { formatDays, formatLitersPerDay, formatTierLabel } from '@/lib/format'
 
-function consumptionHint(observedDays: number): string {
-  if (observedDays <= 0) return 'No irrigation use recorded yet this session.'
+function consumptionHint(observedDays: number, dailyL: number): string {
+  if (dailyL <= 0 && observedDays < 1) return 'No irrigation use recorded yet this session.'
+  if (dailyL <= 0) {
+    return `No irrigation use over ${observedDays.toFixed(1)} observed simulated days.`
+  }
   if (observedDays < 1) {
     return 'Not a full simulated day of usage yet — this rate is extrapolated from the session so far.'
   }
@@ -88,7 +91,7 @@ export function PlanningPage() {
           label="Projected farm water demand"
           badge={planning ? <EstimateBadge tag={planning.sevenDayAverageConsumptionL.tag} /> : undefined}
           value={planning ? formatLitersPerDay(planning.sevenDayAverageConsumptionL.value) : undefined}
-          hint={planning ? consumptionHint(planning.observedDays) : undefined}
+          hint={planning ? consumptionHint(planning.observedDays, planning.sevenDayAverageConsumptionL.value) : undefined}
         />
       </div>
 
