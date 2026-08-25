@@ -6,9 +6,12 @@ import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EstimateBadge } from '@/components/shared/EstimateBadge'
 import { SectionCard } from '@/components/shared/SectionCard'
+import { TankLevelIllustration } from '@/components/visual/FarmIllustrations'
+import { VisualGlance } from '@/components/visual/VisualGlance'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
 import { formatLiters, formatPercent, formatRate } from '@/lib/format'
+import { deriveTankVisualState, tankVisualDetail, tankVisualHeadline } from '@/lib/visualState'
 
 function FlowStep({
   icon,
@@ -90,7 +93,11 @@ export function WaterPage() {
   const { data: water } = usePolling(api.getWater)
   const { data: sources } = usePolling(api.getSources)
 
-  const fillPct = water ? Math.round((water.mainTankL.value / water.tank.capacityL) * 100) : undefined
+  const fillPct = water ? (water.mainTankL.value / water.tank.capacityL) * 100 : undefined
+  const tankVisual =
+    fillPct !== undefined && water
+      ? deriveTankVisualState(fillPct, water.tank.lowThresholdPct, water.tank.criticalThresholdPct)
+      : undefined
 
   return (
     <div className="flex flex-col gap-4">
@@ -126,6 +133,15 @@ export function WaterPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <SectionCard icon={<Gauge className="h-4 w-4" />} title="Supply monitoring">
+          {tankVisual ? (
+            <div className="mb-4">
+              <VisualGlance
+                illustration={<TankLevelIllustration state={tankVisual} />}
+                headline={tankVisualHeadline(tankVisual)}
+                detail={tankVisualDetail(tankVisual)}
+              />
+            </div>
+          ) : null}
           <div className="grid grid-cols-2 gap-4">
             <MonitoringRow
               icon={<Gauge className="h-4 w-4" />}

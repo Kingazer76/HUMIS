@@ -16,8 +16,9 @@ V3 combines:
   `DeviceProvider`, so a simulated farm today can become a real ESP32-driven farm later
   without a redesign.
 
-This repository is being built in staged phases. **Phases 0–3 and 4A–4C are complete.**
-Settings writes live farm numbers (tank size, warning levels, and field setup) while the server is running.
+This repository is being built in staged phases. **Phases 0–3, 4A–4C, and 5 are complete.**
+Settings writes live farm numbers. Overview, Irrigation, Water, and Planning now lead with
+simple pictures and plain-language status, with the original numbers kept as smaller detail.
 
 ## Why a flow-sensor disclaimer matters
 
@@ -85,13 +86,9 @@ shortage result from tank level and usage.
       measured/estimated/simulated labeling.
 - [x] **Phase 3** — Irrigation tab, hysteresis-based irrigation engine, and the single
       safety-controller choke point for every pump/valve action.
-- [x] **Phase 4** — Planning, History, and Settings. **4A done** (weather provider,
-      shortage prediction, `/api/planning`, Overview/Planning days-remaining and shortage
-      risk). **4B done** (History tab + in-memory `historyLog`). **4C done** (Settings tab
-      writes tank capacity/thresholds and zone name/crop/watering-style/soil targets; those
-      numbers drive tank %, available water, days remaining, shortage risk, and irrigation
-      start/stop).
-- [ ] **Phase 5** — Farmer-friendly visual intelligence (plan only).
+- [x] **Phase 4** — Planning, History, and Settings. **4A–4C done.**
+- [x] **Phase 5** — Farmer-friendly visual intelligence: soil/tank/weather/irrigation
+      pictures mapped from existing readings and thresholds (no new calculations).
 - [ ] **Phase 6** — African-inspired visual polish (plan only).
 - [ ] **Phase 7** — AquaFlow Assistant (text chat), actions routed through the safety controller.
 - [ ] **Phase 8** — Khaya-backed speech recognition, translation, and text-to-speech.

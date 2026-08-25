@@ -10,16 +10,18 @@ interface MetricCardProps {
   /** Pass a real value once a phase wires this card to data; omit to render a loading skeleton. */
   value?: ReactNode
   hint?: ReactNode
+  /** Farmer-facing picture + headline. When set, `value` is shown as smaller detail. */
+  glance?: ReactNode
   className?: string
 }
 
 /**
  * The recurring "metric card" pattern from V1: small icon + label, a big
  * value, optional status badge top-right, optional small hint text below.
- * Used as a placeholder skeleton in Phase 0 and reused once real/simulated
- * data is wired in later phases.
+ * Phase 5 can pass `glance` so a picture and plain-language headline lead,
+ * with the number kept as secondary detail.
  */
-export function MetricCard({ icon, label, badge, value, hint, className }: MetricCardProps) {
+export function MetricCard({ icon, label, badge, value, hint, glance, className }: MetricCardProps) {
   return (
     <Card className={cn('gap-3', className)}>
       <CardHeader className="flex items-center justify-between gap-2">
@@ -30,16 +32,22 @@ export function MetricCard({ icon, label, badge, value, hint, className }: Metri
         {badge}
       </CardHeader>
       <CardContent>
-        {value !== undefined ? (
+        {glance ? (
+          <div className="flex flex-col gap-2">
+            {glance}
+            {value !== undefined ? <div className="text-sm text-muted-foreground">{value}</div> : null}
+            {hint !== undefined ? <div className="text-sm text-muted-foreground">{hint}</div> : null}
+          </div>
+        ) : value !== undefined ? (
           <div className="text-3xl font-bold tracking-tight text-foreground">{value}</div>
         ) : (
           <Skeleton className="h-8 w-24" />
         )}
-        {hint !== undefined ? (
+        {!glance && hint !== undefined ? (
           <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
-        ) : (
+        ) : !glance && value === undefined ? (
           <Skeleton className="mt-2 h-4 w-32" />
-        )}
+        ) : null}
       </CardContent>
     </Card>
   )

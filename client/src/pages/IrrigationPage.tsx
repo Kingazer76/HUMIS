@@ -9,9 +9,22 @@ import { EstimateBadge } from '@/components/shared/EstimateBadge'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionCard } from '@/components/shared/SectionCard'
 import { StatusBadge } from '@/components/shared/StatusBadge'
+import { SoilStateIllustration, TankLevelIllustration, WeatherIllustration } from '@/components/visual/FarmIllustrations'
+import { VisualGlance } from '@/components/visual/VisualGlance'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
 import { formatIrrigationPreference, formatPercent } from '@/lib/format'
+import {
+  deriveIrrigationVisualState,
+  deriveSoilVisualState,
+  deriveTankVisualState,
+  deriveWeatherVisualState,
+  irrigationVisualHeadline,
+  soilVisualDetail,
+  soilVisualHeadline,
+  tankVisualHeadline,
+  weatherVisualHeadline,
+} from '@/lib/visualState'
 
 interface ZoneCardProps {
   zone: IrrigationZone
@@ -23,7 +36,9 @@ interface ZoneCardProps {
 function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
   const { minPct, maxPct } = moistureTargetsForZone(zone)
   const moisture = zone.state.soilMoisturePct.value
-  const inRange = moisture >= minPct && moisture <= maxPct
+  const soilVisual = deriveSoilVisualState(moisture, minPct, maxPct, zone.state.active)
+  const irrigationVisual = deriveIrrigationVisualState(zone.state.active, soilVisual === 'dry')
+  const inRange = soilVisual === 'healthy'
 
   return (
     <Card className="gap-3">
@@ -38,10 +53,15 @@ function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
           </p>
         </div>
         <StatusBadge tone={zone.state.active ? 'info' : inRange ? 'good' : 'warning'}>
-          {zone.state.active ? 'Irrigating' : inRange ? 'OK' : 'Needs water'}
+          {irrigationVisualHeadline(irrigationVisual)}
         </StatusBadge>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        <VisualGlance
+          illustration={<SoilStateIllustration state={soilVisual} />}
+          headline={soilVisualHeadline(soilVisual)}
+          detail={soilVisualDetail(soilVisual)}
+        />
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span className="flex items-center gap-1.5">
             Soil moisture
@@ -152,6 +172,23 @@ export function IrrigationPage() {
       ? zones.reduce((sum, z) => sum + z.state.soilMoisturePct.value, 0) / zones.length
       : undefined
   const tankFillPct = water ? (water.mainTankL.value / water.tank.capacityL) * 100 : undefined
+  const tankVisual =
+    tankFillPct !== undefined && water
+      ? deriveTankVisualState(tankFillPct, water.tank.lowThresholdPct, water.tank.criticalThresholdPct)
+      : undefined
+  const weatherVisual = system
+    ? deriveWeatherVisualState({ isRaining: system.rain.isRaining.value })
+    : undefined
+  const farmSoilVisual = zones
+    ? zones.some((z) => z.state.active)
+      ? 'irrigating'
+      : zones.some((z) => {
+          const { minPct, maxPct } = moistureTargetsForZone(z)
+          return deriveSoilVisualState(z.state.soilMoisturePct.value, minPct, maxPct, false) === 'dry'
+        })
+        ? 'dry'
+        : 'healthy'
+    : undefined
   const isManual = system?.system.operationMode === 'manual'
 
   return (
@@ -161,11 +198,19 @@ export function IrrigationPage() {
           icon={<Sprout className="h-4 w-4" />}
           label="Soil moisture"
           badge={zones ? <StatusBadge tone="good">Normal</StatusBadge> : undefined}
-          value={avgMoisture !== undefined ? formatPercent(avgMoisture) : undefined}
+          glance={
+            farmSoilVisual ? (
+              <VisualGlance
+                illustration={<SoilStateIllustration state={farmSoilVisual} />}
+                headline={soilVisualHeadline(farmSoilVisual)}
+              />
+            ) : undefined
+          }
+          value={avgMoisture !== undefined ? `Average ${formatPercent(avgMoisture)}` : undefined}
           hint={
             zones ? (
               <span className="flex items-center gap-1.5">
-                Average across zones <EstimateBadge tag={zones[0]?.state.soilMoisturePct.tag ?? 'simulated'} />
+                Across all fields <EstimateBadge tag={zones[0]?.state.soilMoisturePct.tag ?? 'simulated'} />
               </span>
             ) : undefined
           }
@@ -173,6 +218,14 @@ export function IrrigationPage() {
         <MetricCard
           icon={<Database className="h-4 w-4" />}
           label="Tank level"
+          glance={
+            tankVisual ? (
+              <VisualGlance
+                illustration={<TankLevelIllustration state={tankVisual} />}
+                headline={tankVisualHeadline(tankVisual)}
+              />
+            ) : undefined
+          }
           value={tankFillPct !== undefined ? formatPercent(tankFillPct) : undefined}
           hint={water ? <EstimateBadge tag={water.mainTankL.tag} /> : undefined}
         />
@@ -182,8 +235,16 @@ export function IrrigationPage() {
           badge={
             system ? (
               <StatusBadge tone={system.rain.isRaining.value ? 'info' : 'neutral'}>
-                {system.rain.isRaining.value ? 'Rain' : 'Clear'}
+                {weatherVisualHeadline(weatherVisual ?? 'normal')}
               </StatusBadge>
+            ) : undefined
+          }
+          glance={
+            weatherVisual ? (
+              <VisualGlance
+                illustration={<WeatherIllustration state={weatherVisual} />}
+                headline={weatherVisualHeadline(weatherVisual)}
+              />
             ) : undefined
           }
           value={system ? (system.rain.isRaining.value ? 'Rain detected' : 'No rain') : undefined}
