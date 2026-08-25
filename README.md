@@ -16,9 +16,8 @@ V3 combines:
   `DeviceProvider`, so a simulated farm today can become a real ESP32-driven farm later
   without a redesign.
 
-This repository is being built in staged phases. **Phases 0–3 are complete.** This slice is
-**Phase 4A only**: planning + shortage prediction. History, Settings, the assistant, Khaya,
-and ESP32 hardware are not in this slice.
+This repository is being built in staged phases. **Phases 0–3 and 4A–4B are complete.**
+History is wired. Settings is not.
 
 ## Why a flow-sensor disclaimer matters
 
@@ -87,7 +86,7 @@ planning still returns a valid days-remaining / shortage result from tank level 
       safety-controller choke point for every pump/valve action.
 - [ ] **Phase 4** — Planning, History, and Settings. **4A done** (weather provider,
       shortage prediction, `/api/planning`, Overview/Planning days-remaining and shortage
-      risk). **4B not started** (History tab, Settings tab).
+      risk). **4B done** (History tab + in-memory `historyLog`). **4C not started** (Settings tab).
 - [ ] **Phase 5** — Farmer-friendly visual intelligence (plan only).
 - [ ] **Phase 6** — African-inspired visual polish (plan only).
 - [ ] **Phase 7** — AquaFlow Assistant (text chat), actions routed through the safety controller.

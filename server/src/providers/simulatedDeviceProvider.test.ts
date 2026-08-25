@@ -97,6 +97,14 @@ describe('SimulatedDeviceProvider', () => {
     expect(afterADay.currentDayMinutes).toBe(10)
   })
 
+  it('tracks estimated water used per zone for history (configured rate × time active)', async () => {
+    expect(provider.getCumulativeUsedByZoneL('zone-a')).toBe(0)
+    await provider.setZoneValve('zone-a', true)
+    provider.tick(10)
+    expect(provider.getCumulativeUsedByZoneL('zone-a')).toBeGreaterThan(0)
+    expect(provider.getCumulativeUsedByZoneL('zone-b')).toBe(0)
+  })
+
   it('produces rain events over enough ticks (probabilistic, seeded via repeated trials)', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0) // forces the 8%-chance branch to fire immediately
     provider.tick(1)

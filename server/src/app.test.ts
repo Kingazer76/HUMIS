@@ -55,6 +55,35 @@ describe('GET /api/zones', () => {
   })
 })
 
+describe('GET /api/history', () => {
+  it('returns an empty list when nothing has been recorded yet', async () => {
+    const { historyLog } = await import('./history/historyLog.js')
+    historyLog.resetForTests()
+    const res = await request(app).get('/api/history')
+    expect(res.status).toBe(200)
+    expect(res.body.records).toEqual([])
+  })
+
+  it('returns recorded irrigation events labelled simulated, newest first', async () => {
+    const { historyLog } = await import('./history/historyLog.js')
+    historyLog.resetForTests()
+
+    const start = await request(app).post('/api/irrigation/zone-b/start').send()
+    expect(start.status).toBe(200)
+    expect(start.body.ok).toBe(true)
+
+    const res = await request(app).get('/api/history')
+    expect(res.status).toBe(200)
+    expect(res.body.records.length).toBeGreaterThan(0)
+    const latest = res.body.records[0]
+    expect(latest.tag).toBe('simulated')
+    expect(latest.zoneName).toMatch(/zone b/i)
+    expect(latest.cropName).toBe('Tomato')
+    expect(latest.wateringAction).toBe('started')
+    expect(latest.waterUsedL).toBe(0)
+  })
+})
+
 describe('GET /api/planning', () => {
   it('returns a valid, safely-tagged shortage prediction end-to-end against the real seeded farm', async () => {
     const res = await request(app).get('/api/planning')

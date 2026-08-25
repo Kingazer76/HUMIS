@@ -90,6 +90,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
   private lastWaterUsedLPerMin = 0
   /** Last-7-simulated-days usage buckets for shortage prediction. Not a history log. */
   private rollingConsumption = emptyRollingWindow()
+  private cumulativeUsedByZoneL = new Map<string, number>(IRRIGATION_ZONE_CONFIGS.map((cfg) => [cfg.id, 0]))
 
   private cropById = new Map<string, CropProfile>(CROP_PROFILES.map((c) => [c.id, c]))
   private zoneConfigById = new Map<string, IrrigationZoneConfig>(
@@ -143,6 +144,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
       if (used <= 0) continue
       waterUsedL += used
       zone.lastWateredAt = nowIso()
+      this.cumulativeUsedByZoneL.set(cfg.id, (this.cumulativeUsedByZoneL.get(cfg.id) ?? 0) + used)
     }
 
     this.tankLevelL = clamp(this.tankLevelL + waterInL - waterUsedL, 0, TANK_CONFIG.capacityL)
@@ -278,6 +280,11 @@ export class SimulatedDeviceProvider implements DeviceProvider {
 
   getCumulativeTotalsL(): { inflowL: number; usedL: number } {
     return { inflowL: this.cumulativeInflowL, usedL: this.cumulativeUsedL }
+  }
+
+  /** Estimated litres this zone has used since the provider was constructed (configured rate × time active). */
+  getCumulativeUsedByZoneL(zoneId: string): number {
+    return this.cumulativeUsedByZoneL.get(zoneId) ?? 0
   }
 
   getLastTickRatesLPerMin(): { waterInLPerMin: number; waterUsedLPerMin: number } {

@@ -39,3 +39,22 @@ export function formatLitersPerDay(value: number): string {
 export function formatTierLabel(tier: string): string {
   return tier.toUpperCase()
 }
+
+export function formatWhen(iso: string): string {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+export function formatSoilCondition(condition: string): string {
+  if (condition === 'dry') return 'Dry'
+  if (condition === 'wet') return 'Wet enough'
+  return 'Healthy'
+}
+
+export function formatWateringAction(action: string): string {
+  if (action === 'started') return 'Started watering'
+  if (action === 'stopped') return 'Stopped watering'
+  if (action === 'watering') return 'Watering'
+  return 'Not watering'
+}

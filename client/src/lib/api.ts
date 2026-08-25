@@ -1,4 +1,5 @@
 import type {
+  HistorySnapshot,
   IrrigationActionResult,
   IrrigationZone,
   OperationMode,
@@ -43,6 +44,7 @@ export const api = {
   getZones: () => getJson<IrrigationZone[]>('/api/zones'),
   getSystem: () => getJson<SystemSnapshot>('/api/system'),
   getPlanning: () => getJson<PlanningSnapshot>('/api/planning'),
+  getHistory: () => getJson<HistorySnapshot>('/api/history'),
 
   startZone: (zoneId: string) => postJson<IrrigationActionResult>(`/api/irrigation/${zoneId}/start`),
   stopZone: (zoneId: string) => postJson<IrrigationActionResult>(`/api/irrigation/${zoneId}/stop`),

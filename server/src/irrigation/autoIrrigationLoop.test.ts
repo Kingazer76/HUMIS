@@ -95,6 +95,7 @@ vi.mock('../providers/index.js', () => ({
   get deviceProvider() {
     return fakeProvider
   },
+  simulatedProvider: null,
 }))
 
 describe('runAutoIrrigationCycle', () => {

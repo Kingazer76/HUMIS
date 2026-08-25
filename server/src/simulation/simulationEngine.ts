@@ -1,4 +1,5 @@
 import { SIM_MINUTES_PER_TICK, SIM_TICK_INTERVAL_MS } from '../env.js'
+import { recordHistoryAfterTick } from '../history/recordFromSimulation.js'
 import { simulatedProvider } from '../providers/index.js'
 
 let timer: NodeJS.Timeout | null = null
@@ -18,6 +19,10 @@ export function startSimulationEngine(): void {
   if (timer) return
   timer = setInterval(() => {
     provider.tick(SIM_MINUTES_PER_TICK)
+    recordHistoryAfterTick(provider, SIM_MINUTES_PER_TICK).catch((error: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error('History snapshot failed:', error)
+    })
   }, SIM_TICK_INTERVAL_MS)
 }
 

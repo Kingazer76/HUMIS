@@ -172,4 +172,34 @@ export interface PlanningSnapshot {
   observedDays: number
 }
 
-export const AQUAFLOW_SHARED_VERSION = '0.4.0'
+export type HistoryRecordKind = 'irrigation-event' | 'farm-snapshot'
+export type SoilCondition = 'dry' | 'healthy' | 'wet'
+export type WateringAction = 'started' | 'stopped' | 'watering' | 'idle'
+
+/**
+ * One row in GET /api/history. Farmer-facing fields are the names, soil
+ * condition, watering action, water used, and when it happened. `id`,
+ * `kind`, `zoneId`, and `tankLevelL` are kept for tests and later work —
+ * the History tab does not show them as primary columns.
+ */
+export interface HistoryRecord {
+  id: string
+  recordedAt: string
+  kind: HistoryRecordKind
+  tag: DataTag
+  zoneId: string
+  zoneName: string
+  cropName: string
+  soilMoisturePct: number
+  soilCondition: SoilCondition
+  wateringAction: WateringAction
+  waterUsedL: number
+  tankLevelL: number
+}
+
+/** Response shape for GET /api/history. Newest record first. */
+export interface HistorySnapshot {
+  records: HistoryRecord[]
+}
+
+export const AQUAFLOW_SHARED_VERSION = '0.5.0'
