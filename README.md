@@ -91,7 +91,8 @@ shortage result from tank level and usage.
 - [x] **Phase 5** — Farmer-friendly visual intelligence: soil/tank/weather/irrigation
       pictures mapped from existing readings and thresholds (no new calculations).
 - [x] **Phase 6** — Visual redesign: mint page, deep teal actions, outlined tabs, clearer
-      cards and badges. Ghanaian/Adinkra motifs are not included yet.
+      cards and badges. Gold is a navigation accent (tab outlines and a small diamond
+      mark). It is not used as a warning color. Full Adinkra patterning is not in this phase.
 - [ ] **Phase 7** — AquaFlow Assistant (text chat), actions routed through the safety controller.
 - [ ] **Phase 8** — Khaya-backed speech recognition, translation, and text-to-speech.
 - [ ] **Phase 9 (deferred)** — real ESP32 hardware integration. Not started; `USE_SIMULATED`

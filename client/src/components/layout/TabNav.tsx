@@ -11,9 +11,9 @@ const TABS = [
 ] as const
 
 /**
- * Six-tab farm navigation. Every tab has a visible outline. The open tab is
- * filled with the deep teal brand color so it is obvious at a glance.
- * On phones the tabs wrap into two rows of three.
+ * Six-tab farm navigation. Layout is locked: outlined tabs, teal filled
+ * active tab, two rows of three on phones. Gold is a secondary accent on
+ * the outlines and a small diamond mark — not a status color.
  */
 export function TabNav() {
   return (
@@ -27,10 +27,10 @@ export function TabNav() {
           to={tab.to}
           className={({ isActive }) =>
             cn(
-              'rounded-lg border-2 px-2 py-2.5 text-center text-sm leading-tight transition-colors sm:px-3',
+              'aquaflow-tab rounded-lg border-2 px-2 py-2.5 text-center text-sm leading-tight transition-colors sm:px-3',
               isActive
-                ? 'border-primary bg-primary font-semibold text-primary-foreground shadow-sm'
-                : 'border-primary/50 bg-card font-medium text-foreground hover:border-primary hover:bg-secondary',
+                ? 'aquaflow-tab-active border-gold bg-primary font-semibold text-primary-foreground'
+                : 'border-primary/50 bg-card font-medium text-foreground hover:border-gold/70 hover:bg-secondary',
             )
           }
         >
