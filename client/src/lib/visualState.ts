@@ -80,49 +80,59 @@ export function soilVisualHeadline(state: SoilVisualState): string {
 
 export function soilVisualDetail(state: SoilVisualState): string {
   if (state === 'dry') return 'This field needs water.'
-  if (state === 'irrigating') return 'Water is going onto this field.'
-  return 'Moisture is in a good range for this crop.'
+  if (state === 'irrigating') return 'Water is currently flowing to this field.'
+  return 'The soil has enough water for this crop.'
 }
 
 export function tankVisualHeadline(state: TankVisualState): string {
-  if (state === 'critical') return 'Tank is too empty'
-  if (state === 'low') return 'Tank is getting low'
-  return 'Tank has plenty of water'
+  if (state === 'critical') return 'Water level is too low'
+  if (state === 'low') return 'Water level is low'
+  return 'Water level is good'
 }
 
 export function tankVisualDetail(state: TankVisualState): string {
-  if (state === 'critical') return 'New watering will not start until the tank is refilled.'
-  if (state === 'low') return 'Watch watering carefully so the tank is not emptied.'
+  if (state === 'critical') return 'New watering will not start until more water is stored.'
+  if (state === 'low') return 'Watch watering so the stored water is not emptied.'
   return 'There is enough stored water for normal watering.'
 }
 
 export function weatherVisualHeadline(state: WeatherVisualState): string {
-  if (state === 'rain') return 'Rain'
+  if (state === 'rain') return 'Rain detected'
   if (state === 'hot-dry') return 'Hot and dry'
   return 'No rain'
 }
 
 export function weatherVisualDetail(state: WeatherVisualState): string {
-  if (state === 'rain') return 'Rain is being counted. Watering still follows the tank and soil.'
+  if (state === 'rain') return 'Rain is falling. Watering still follows the stored water and the soil.'
   if (state === 'hot-dry') return 'Dry weather — fields may need water sooner.'
-  return 'No rain right now. Watering still follows the tank and soil.'
+  return 'No rain right now. Watering still follows the stored water and the soil.'
 }
 
 export function irrigationVisualHeadline(state: IrrigationVisualState): string {
-  if (state === 'running') return 'Watering'
+  if (state === 'running') return 'Watering now'
   if (state === 'needs-attention') return 'Needs water'
-  return 'Doing fine'
+  return 'Not watering'
 }
 
 export function irrigationVisualDetail(state: IrrigationVisualState): string {
-  if (state === 'running') return 'Water is flowing to this field.'
-  if (state === 'needs-attention') return 'Soil is at the dry target. Watering can start if the tank allows it.'
+  if (state === 'running') return 'Water is currently flowing to this field.'
+  if (state === 'needs-attention') return 'Soil is dry. Watering can start if there is enough stored water.'
   return 'This field does not need water right now.'
 }
 
 export function shortageVisualHeadline(tier: ShortageTier): string {
-  if (tier === 'critical') return 'Water is critically low'
-  if (tier === 'high') return 'Water may run short soon'
-  if (tier === 'moderate') return 'Water is getting low'
-  return 'Water supply looks fine'
+  if (tier === 'critical') return 'Water may run out soon'
+  if (tier === 'high') return 'Water may run low soon'
+  if (tier === 'moderate') return 'Water may run low soon'
+  return 'Water looks fine'
+}
+
+/** Farmer wording for the live system phase — presentation only. */
+export function formatSystemPhase(phase: string): string {
+  if (phase === 'irrigating') return 'Watering now'
+  if (phase === 'rain-detected') return 'Rain detected'
+  if (phase === 'low-water') return 'Water level is low'
+  if (phase === 'soil-moisture-sufficient') return 'Soil looks good'
+  if (phase === 'waiting') return 'Waiting'
+  return phase.replaceAll('-', ' ')
 }

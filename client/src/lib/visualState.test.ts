@@ -5,6 +5,13 @@ import {
   deriveSoilVisualState,
   deriveTankVisualState,
   deriveWeatherVisualState,
+  formatSystemPhase,
+  irrigationVisualHeadline,
+  shortageVisualHeadline,
+  soilVisualDetail,
+  soilVisualHeadline,
+  tankVisualHeadline,
+  weatherVisualHeadline,
 } from './visualState'
 
 describe('deriveSoilVisualState', () => {
@@ -80,5 +87,22 @@ describe('deriveShortageVisualState', () => {
     expect(deriveShortageVisualState('moderate')).toBe('moderate')
     expect(deriveShortageVisualState('high')).toBe('high')
     expect(deriveShortageVisualState('critical')).toBe('critical')
+  })
+})
+
+describe('farmer-facing headlines', () => {
+  it('uses plain watering and water-level wording', () => {
+    expect(soilVisualHeadline('irrigating')).toBe('Watering now')
+    expect(soilVisualHeadline('dry')).toBe('Soil is dry')
+    expect(soilVisualDetail('irrigating')).toBe('Water is currently flowing to this field.')
+    expect(tankVisualHeadline('low')).toBe('Water level is low')
+    expect(tankVisualHeadline('critical')).toBe('Water level is too low')
+    expect(tankVisualHeadline('high')).toBe('Water level is good')
+    expect(weatherVisualHeadline('rain')).toBe('Rain detected')
+    expect(irrigationVisualHeadline('running')).toBe('Watering now')
+    expect(shortageVisualHeadline('high')).toBe('Water may run low soon')
+    expect(shortageVisualHeadline('critical')).toBe('Water may run out soon')
+    expect(formatSystemPhase('irrigating')).toBe('Watering now')
+    expect(formatSystemPhase('low-water')).toBe('Water level is low')
   })
 })

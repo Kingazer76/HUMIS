@@ -132,3 +132,39 @@
     @apply font-sans;
     }
 }
+
+/* Lightweight watering drops — status only, not decoration. */
+@keyframes aquaflow-water-drop {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}
+
+.aquaflow-water-drop {
+  animation: aquaflow-water-drop 1.05s ease-in infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.aquaflow-water-drop-2 {
+  animation-delay: 0.35s;
+}
+
+.aquaflow-water-drop-3 {
+  animation-delay: 0.7s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aquaflow-water-drop {
+    animation: none;
+    opacity: 0.9;
+  }
+}

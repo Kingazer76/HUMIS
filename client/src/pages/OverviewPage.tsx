@@ -10,7 +10,7 @@ import {
 import { EstimateBadge } from '@/components/shared/EstimateBadge'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionCard } from '@/components/shared/SectionCard'
-import { StatusBadge, shortageTierTone } from '@/components/shared/StatusBadge'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import {
   IrrigationStateIllustration,
   ShortageStateIllustration,
@@ -20,13 +20,14 @@ import {
 import { VisualGlance } from '@/components/visual/VisualGlance'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
-import { daysRemainingHint, formatDaysRemainingDisplay, formatLiters, formatRate, formatTierLabel } from '@/lib/format'
+import { daysRemainingHint, formatDaysRemainingDisplay, formatLiters, formatRate } from '@/lib/format'
 import {
   deriveIrrigationVisualState,
   deriveShortageVisualState,
   deriveSoilVisualState,
   deriveTankVisualState,
   deriveWeatherVisualState,
+  formatSystemPhase,
   irrigationVisualHeadline,
   shortageVisualHeadline,
   tankVisualDetail,
@@ -84,12 +85,12 @@ export function OverviewPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <MetricCard
           icon={<Droplets className="h-4 w-4" />}
-          label="Main tank level"
+          label="Water level"
           badge={water ? <EstimateBadge tag={water.mainTankL.tag} /> : undefined}
           glance={
             tankVisual ? (
               <VisualGlance
-                illustration={<TankLevelIllustration state={tankVisual} />}
+                illustration={<TankLevelIllustration state={tankVisual} fillPct={fillPct} />}
                 headline={tankVisualHeadline(tankVisual)}
                 detail={tankVisualDetail(tankVisual)}
               />
@@ -106,7 +107,7 @@ export function OverviewPage() {
           label="Available water"
           badge={water ? <EstimateBadge tag="simulated" /> : undefined}
           value={water ? formatLiters(water.totalAvailableL.value) : undefined}
-          hint="Main tank + transferable sources"
+          hint="Stored water plus other sources"
         />
         <MetricCard
           icon={<CalendarDays className="h-4 w-4" />}
@@ -138,7 +139,7 @@ export function OverviewPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <MetricCard
           icon={<Sprout className="h-4 w-4" />}
-          label="Combined zone flow"
+          label="Field watering"
           badge={projectedDemandLPerMin !== undefined ? <EstimateBadge tag="estimated" /> : undefined}
           glance={
             irrigationVisual ? (
@@ -149,12 +150,11 @@ export function OverviewPage() {
             ) : undefined
           }
           value={projectedDemandLPerMin !== undefined ? formatRate(projectedDemandLPerMin) : undefined}
-          hint="Combined flow if every field is watering at once."
+          hint="How much water would flow if every field watered at once."
         />
         <MetricCard
           icon={<AlertTriangle className="h-4 w-4" />}
-          label="Shortage risk"
-          badge={planning ? <StatusBadge tone={shortageTierTone(planning.tier)}>{planning.tier}</StatusBadge> : undefined}
+          label="Water outlook"
           glance={
             shortageVisual ? (
               <VisualGlance
@@ -163,17 +163,16 @@ export function OverviewPage() {
               />
             ) : undefined
           }
-          value={planning ? formatTierLabel(planning.tier) : undefined}
           hint={planning?.reason}
         />
         <MetricCard
           icon={<ToggleLeft className="h-4 w-4" />}
-          label="Irrigation mode"
+          label="Watering mode"
           value={system ? (system.system.operationMode === 'auto' ? 'Auto' : 'Manual') : undefined}
           hint={
             system ? (
               <StatusBadge tone={system.system.phase === 'irrigating' ? 'info' : 'neutral'}>
-                {system.system.phase.replace('-', ' ')}
+                {formatSystemPhase(system.system.phase)}
               </StatusBadge>
             ) : undefined
           }
@@ -191,8 +190,8 @@ export function OverviewPage() {
                   {weatherVisualDetail(weatherVisual)}{' '}
                   {planning
                     ? planning.weatherApplied
-                      ? 'A forecast is available and may slightly change days remaining.'
-                      : 'Forecast unavailable — days remaining still uses tank water and recent usage.'
+                      ? 'Rain chance is included and may slightly change days remaining.'
+                      : 'Days remaining still uses stored water and recent watering.'
                     : null}
                 </>
               }
@@ -204,11 +203,11 @@ export function OverviewPage() {
           title="Active alerts"
           description={
             tankVisual === 'critical'
-              ? 'The tank is at or below the stop-watering level.'
+              ? 'Water level is too low. New watering will not start.'
               : shortageAlert && planning
-                ? planning.reason
+                ? shortageVisualHeadline(planning.tier)
                 : water
-                  ? 'No active alerts. All systems normal.'
+                  ? 'No active alerts. Water and fields look normal.'
                   : undefined
           }
         />

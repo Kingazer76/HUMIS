@@ -28,8 +28,8 @@ export function formatDaysRemainingDisplay(daysRemaining: number, dailyConsumpti
 export function daysRemainingHint(dailyConsumptionL: number, weatherApplied: boolean): string {
   if (dailyConsumptionL <= 0) return 'Not enough watering data yet'
   return weatherApplied
-    ? 'Weather forecast available'
-    : 'Weather forecast unavailable — based on usage data only'
+    ? 'Rain chance is included'
+    : 'Based on watering so far'
 }
 
 export function formatLitersPerDay(value: number): string {

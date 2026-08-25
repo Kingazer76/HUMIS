@@ -2,7 +2,6 @@ import { AlertTriangle, CalendarDays, CloudSun, Leaf, ShieldCheck } from '@/lib/
 import { EstimateBadge } from '@/components/shared/EstimateBadge'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionCard } from '@/components/shared/SectionCard'
-import { StatusBadge, shortageTierTone } from '@/components/shared/StatusBadge'
 import {
   ShortageStateIllustration,
   TankLevelIllustration,
@@ -11,7 +10,7 @@ import {
 import { VisualGlance } from '@/components/visual/VisualGlance'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
-import { daysRemainingHint, formatDaysRemainingDisplay, formatLitersPerDay, formatTierLabel } from '@/lib/format'
+import { daysRemainingHint, formatDaysRemainingDisplay, formatLitersPerDay } from '@/lib/format'
 import {
   deriveShortageVisualState,
   deriveTankVisualState,
@@ -24,22 +23,22 @@ import {
 } from '@/lib/visualState'
 
 function consumptionHint(observedDays: number, dailyL: number): string {
-  if (dailyL <= 0 && observedDays < 1) return 'No irrigation use recorded yet this session.'
+  if (dailyL <= 0 && observedDays < 1) return 'Not enough watering data yet.'
   if (dailyL <= 0) {
-    return `No irrigation use over ${observedDays.toFixed(1)} observed simulated days.`
+    return 'Not enough watering data yet.'
   }
   if (observedDays < 1) {
-    return 'Not a full simulated day of usage yet — this rate is extrapolated from the session so far.'
+    return 'Not a full day of watering yet — this amount is a rough look at the session so far.'
   }
   if (observedDays < 7) {
-    return `Average over ${observedDays.toFixed(1)} observed simulated days (builds toward a 7-day average).`
+    return `Average over ${observedDays.toFixed(1)} days of watering (builds toward a 7-day average).`
   }
-  return '7-day rolling average of irrigation use from the main tank.'
+  return 'Average watering from the storage tank over the last 7 days.'
 }
 
-function alertsCopy(tier: string, reason: string): string {
-  if (tier === 'critical' || tier === 'high') return reason
-  return 'No active alerts — water supply is within normal range.'
+function alertsCopy(tier: 'low' | 'moderate' | 'high' | 'critical'): string {
+  if (tier === 'critical' || tier === 'high') return shortageVisualHeadline(tier)
+  return 'No active alerts. Water looks fine.'
 }
 
 /**
@@ -71,15 +70,15 @@ export function PlanningPage() {
         />
       ) : null}
 
-      <SectionCard icon={<ShieldCheck className="h-4 w-4" />} title="Water conservation mode">
+      <SectionCard icon={<ShieldCheck className="h-4 w-4" />} title="Water level">
         {tankVisual ? (
           <VisualGlance
-            illustration={<TankLevelIllustration state={tankVisual} />}
+            illustration={<TankLevelIllustration state={tankVisual} fillPct={fillPct} />}
             headline={tankVisualHeadline(tankVisual)}
             detail={tankVisualDetail(tankVisual)}
           />
         ) : (
-          <p className="text-sm text-muted-foreground">Loading tank status…</p>
+          <p className="text-sm text-muted-foreground">Loading water level…</p>
         )}
       </SectionCard>
 
@@ -111,8 +110,7 @@ export function PlanningPage() {
         />
         <MetricCard
           icon={<AlertTriangle className="h-4 w-4" />}
-          label="Water shortage prediction"
-          badge={planning ? <StatusBadge tone={shortageTierTone(planning.tier)}>{planning.tier}</StatusBadge> : undefined}
+          label="Water outlook"
           glance={
             shortageVisual ? (
               <VisualGlance
@@ -121,13 +119,12 @@ export function PlanningPage() {
               />
             ) : undefined
           }
-          value={planning ? formatTierLabel(planning.tier) : undefined}
           hint={planning?.reason}
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <SectionCard icon={<CloudSun className="h-4 w-4" />} title="Weather & rainfall outlook">
+        <SectionCard icon={<CloudSun className="h-4 w-4" />} title="Rain and weather">
           {weatherVisual ? (
             <VisualGlance
               illustration={<WeatherIllustration state={weatherVisual} />}
@@ -137,8 +134,8 @@ export function PlanningPage() {
                   {weatherVisualDetail(weatherVisual)}{' '}
                   {planning
                     ? planning.weatherApplied
-                      ? 'A forecast is available. If rainfall changes the usage rate, days remaining will show it.'
-                      : 'Forecast unavailable. Shortage prediction still uses tank water and rolling usage — weather is never required.'
+                      ? 'Rain chance is included and may slightly change days remaining.'
+                      : 'Days remaining still uses stored water and recent watering.'
                     : null}
                 </>
               }
@@ -147,7 +144,7 @@ export function PlanningPage() {
         </SectionCard>
         <MetricCard
           icon={<Leaf className="h-4 w-4" />}
-          label="Projected farm water demand"
+          label="Water used each day"
           badge={planning ? <EstimateBadge tag={planning.sevenDayAverageConsumptionL.tag} /> : undefined}
           value={planning ? formatLitersPerDay(planning.sevenDayAverageConsumptionL.value) : undefined}
           hint={planning ? consumptionHint(planning.observedDays, planning.sevenDayAverageConsumptionL.value) : undefined}
@@ -157,13 +154,12 @@ export function PlanningPage() {
       <SectionCard
         icon={<AlertTriangle className="h-4 w-4" />}
         title="Alerts"
-        description={planning ? alertsCopy(planning.tier, planning.reason) : undefined}
+        description={planning ? alertsCopy(planning.tier) : undefined}
       />
 
       <p className="text-xs text-muted-foreground">
-        Predictions are estimates from simulated data and are not guaranteed. Days remaining uses
-        main-tank water only (irrigation never draws from external sources) divided by the rolling
-        usage rate.
+        Predictions are estimates from this simulated farm and are not guaranteed. Days remaining uses
+        stored tank water only (fields never drink from the other water sources) divided by recent watering.
       </p>
     </div>
   )

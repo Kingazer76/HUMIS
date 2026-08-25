@@ -117,14 +117,14 @@ export function WaterPage() {
           <FlowStep
             icon={<Database className="h-4 w-4" />}
             label="Stored"
-            hint="main tank"
+            hint="in the storage tank"
             value={water ? formatLiters(water.mainTankL.value) : undefined}
             tag={water?.mainTankL.tag}
           />
           <FlowStep
             icon={<ArrowUp className="h-4 w-4" />}
             label="Water used"
-            hint="through irrigation"
+            hint="through watering"
             value={water ? formatRate(water.waterUsedLPerMin.value) : undefined}
             tag={water?.waterUsedLPerMin.tag}
           />
@@ -136,7 +136,7 @@ export function WaterPage() {
           {tankVisual ? (
             <div className="mb-4">
               <VisualGlance
-                illustration={<TankLevelIllustration state={tankVisual} />}
+                illustration={<TankLevelIllustration state={tankVisual} fillPct={fillPct} />}
                 headline={tankVisualHeadline(tankVisual)}
                 detail={tankVisualDetail(tankVisual)}
               />
@@ -145,12 +145,12 @@ export function WaterPage() {
           <div className="grid grid-cols-2 gap-4">
             <MonitoringRow
               icon={<Gauge className="h-4 w-4" />}
-              label="Tank capacity"
+              label="How much the tank holds"
               value={water ? formatLiters(water.tank.capacityL) : undefined}
             />
             <MonitoringRow
               icon={<Database className="h-4 w-4" />}
-              label="Tank fill"
+              label="Water level"
               value={fillPct !== undefined ? formatPercent(fillPct) : undefined}
             />
             <MonitoringRow
@@ -163,13 +163,12 @@ export function WaterPage() {
               label="Used this session"
               value={water ? formatLiters(water.usedSinceStartL.value) : undefined}
             />
-            <MonitoringRow icon={<Database className="h-4 w-4" />} label="Daily consumption" />
-            <MonitoringRow icon={<Gauge className="h-4 w-4" />} label="7-day average" />
+            <MonitoringRow icon={<Database className="h-4 w-4" />} label="Water used today" />
+            <MonitoringRow icon={<Gauge className="h-4 w-4" />} label="Last 7 days" />
           </div>
           <p className="mt-3 text-[11px] text-muted-foreground/70">
-            Daily consumption and the 7-day average need the historical log arriving in Phase 4 — shown
-            blank rather than guessed. "This session" totals reset whenever the server restarts (prototype
-            in-memory state only).
+            Water used today and the last 7 days are not filled on this card yet. Totals for this
+            session reset whenever the server restarts.
           </p>
         </SectionCard>
         <SectionCard

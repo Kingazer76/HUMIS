@@ -19,6 +19,7 @@ import {
   deriveSoilVisualState,
   deriveTankVisualState,
   deriveWeatherVisualState,
+  formatSystemPhase,
   irrigationVisualHeadline,
   soilVisualDetail,
   soilVisualHeadline,
@@ -64,7 +65,7 @@ function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
         />
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            Soil moisture
+            How wet
             <EstimateBadge tag={zone.state.soilMoisturePct.tag} />
           </span>
           <span className="font-medium text-foreground">{formatPercent(moisture)}</span>
@@ -73,12 +74,12 @@ function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
         <div className="flex justify-between text-[11px] text-muted-foreground/70">
           <span>0%</span>
           <span>
-            target {minPct}-{maxPct}%
+            usual range {minPct}-{maxPct}%
           </span>
           <span>100%</span>
         </div>
         <p className="text-[11px] text-muted-foreground/70">
-          {zone.sensorMode === 'default' ? 'Default sensor' : 'Custom sensor'}
+          {zone.sensorMode === 'default' ? 'Usual soil reading' : 'Custom soil reading'}
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Button size="sm" variant="outline" disabled title="Zone editing is not yet implemented">
@@ -196,8 +197,7 @@ export function IrrigationPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <MetricCard
           icon={<Sprout className="h-4 w-4" />}
-          label="Soil moisture"
-          badge={zones ? <StatusBadge tone="good">Normal</StatusBadge> : undefined}
+          label="Soil"
           glance={
             farmSoilVisual ? (
               <VisualGlance
@@ -217,11 +217,11 @@ export function IrrigationPage() {
         />
         <MetricCard
           icon={<Database className="h-4 w-4" />}
-          label="Tank level"
+          label="Water level"
           glance={
             tankVisual ? (
               <VisualGlance
-                illustration={<TankLevelIllustration state={tankVisual} />}
+                illustration={<TankLevelIllustration state={tankVisual} fillPct={tankFillPct} />}
                 headline={tankVisualHeadline(tankVisual)}
               />
             ) : undefined
@@ -231,7 +231,7 @@ export function IrrigationPage() {
         />
         <MetricCard
           icon={<CloudRain className="h-4 w-4" />}
-          label="Rain status"
+          label="Rain"
           badge={
             system ? (
               <StatusBadge tone={system.rain.isRaining.value ? 'info' : 'neutral'}>
@@ -253,14 +253,14 @@ export function IrrigationPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <SectionCard icon={<Power className="h-4 w-4" />} title="Pump status">
+        <SectionCard icon={<Power className="h-4 w-4" />} title="Water flow">
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-primary">
               <Power className="h-4 w-4" />
             </span>
             <div>
               <div className="font-medium text-foreground">
-                {system ? (system.pump.isOn.value ? 'Pump running' : 'Pump idle') : <Skeleton className="h-4 w-24" />}
+                {system ? (system.pump.isOn.value ? 'Watering now' : 'Not watering') : <Skeleton className="h-4 w-24" />}
               </div>
               <p className="text-xs text-muted-foreground">
                 {system ? (system.pump.isOn.value ? 'Water flowing' : 'No water flowing') : null}
@@ -268,15 +268,15 @@ export function IrrigationPage() {
             </div>
           </div>
         </SectionCard>
-        <SectionCard icon={<Activity className="h-4 w-4" />} title="System status">
+        <SectionCard icon={<Activity className="h-4 w-4" />} title="What the farm is doing">
           <StatusBadge tone={system?.system.phase === 'irrigating' ? 'info' : 'neutral'}>
-            {system ? system.system.phase.replace('-', ' ') : '—'}
+            {system ? formatSystemPhase(system.system.phase) : '—'}
           </StatusBadge>
         </SectionCard>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <SectionCard icon={<Settings2 className="h-4 w-4" />} title="Operation mode">
+        <SectionCard icon={<Settings2 className="h-4 w-4" />} title="Watering mode">
           <div className="flex gap-2">
             <Button
               className="flex-1"
@@ -297,8 +297,8 @@ export function IrrigationPage() {
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
             {isManual
-              ? 'Automatic decisions are paused. Use "Water now" or Manual Pump Control to act directly.'
-              : 'System controls the pump automatically based on sensor readings.'}
+              ? 'Automatic watering is paused. Use "Water now" or the buttons here to water by hand.'
+              : 'The farm waters on its own from the soil and the stored water.'}
           </p>
           {modeAction.error ? <p className="mt-1 text-xs text-red-600">{modeAction.error}</p> : null}
         </SectionCard>
@@ -322,7 +322,7 @@ export function IrrigationPage() {
             </Button>
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            {isManual ? 'Pump responds directly to these buttons.' : 'Switch to Manual mode to control the pump.'}
+            {isManual ? 'These buttons turn the water on or off.' : 'Switch to Manual to water by hand.'}
           </p>
           {pumpAction.error ? <p className="mt-1 text-xs text-red-600">{pumpAction.error}</p> : null}
         </SectionCard>
@@ -330,8 +330,8 @@ export function IrrigationPage() {
 
       <SectionCard
         icon={<Sprout className="h-4 w-4" />}
-        title="Crop irrigation zones"
-        description="Each zone is configured independently."
+        title="Fields"
+        description="Each field is set up on its own."
         action={
           <Button size="sm" variant="outline" disabled title="Zone management is not yet implemented">
             <Plus className="h-4 w-4" /> Add zone
