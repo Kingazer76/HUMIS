@@ -76,7 +76,7 @@
     --success-foreground: #f4fbf6;
     --warning: #b7791f;
     --warning-foreground: #fff8ea;
-    --gold: #c6a03a;
+    --gold: #d1a429;
     --border: #b7cdc3;
     --input: #b7cdc3;
     --ring: #0f5f56;
@@ -116,7 +116,7 @@
     --success-foreground: #0e1714;
     --warning: #d4a04a;
     --warning-foreground: #0e1714;
-    --gold: #d4b45c;
+    --gold: #e0b94a;
     --border: #2a3c35;
     --input: #2a3c35;
     --ring: #3d9a8a;
@@ -191,28 +191,26 @@
   position: relative;
 }
 
-.aquaflow-tab::before {
+.aquaflow-tab:not(.aquaflow-tab-active) {
+  box-shadow: inset 0 2px 0 0 var(--gold);
+}
+
+.aquaflow-tab-active {
+  border-color: var(--gold);
+  box-shadow:
+    inset 0 -3px 0 0 var(--gold),
+    0 1px 2px rgb(15 31 27 / 0.08);
+}
+
+.aquaflow-tab-active::before {
   content: "";
   pointer-events: none;
   position: absolute;
   top: 0;
   left: 50%;
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
   transform: translate(-50%, -50%) rotate(45deg);
   background: var(--gold);
-  opacity: 0.5;
-}
-
-.aquaflow-tab-active::before {
-  width: 6px;
-  height: 6px;
-  opacity: 1;
   box-shadow: 0 0 0 2px var(--primary);
-}
-
-.aquaflow-tab-active {
-  box-shadow:
-    inset 0 -3px 0 0 var(--gold),
-    0 1px 2px rgb(15 31 27 / 0.08);
 }
