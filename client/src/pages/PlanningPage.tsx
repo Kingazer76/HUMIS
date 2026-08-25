@@ -81,7 +81,7 @@ export function PlanningPage() {
           description={
             planning
               ? planning.weatherApplied
-                ? 'A weather forecast was available and slightly adjusted the usage rate used for days remaining. If weather drops out, planning still runs from tank level and usage alone.'
+                ? 'A weather forecast is available. If rainfall changes the usage rate, days remaining will show it. If weather drops out, planning still runs from tank level and usage alone.'
                 : 'Weather forecast unavailable. Shortage prediction is using main-tank water and rolling usage only — weather is never required.'
               : undefined
           }
