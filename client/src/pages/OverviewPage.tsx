@@ -13,7 +13,7 @@ import { SectionCard } from '@/components/shared/SectionCard'
 import { StatusBadge, shortageTierTone } from '@/components/shared/StatusBadge'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
-import { formatDays, formatLiters, formatRate, formatTierLabel } from '@/lib/format'
+import { daysRemainingHint, formatDaysRemainingDisplay, formatLiters, formatRate, formatTierLabel } from '@/lib/format'
 
 /**
  * V1's Overview tab. Days remaining and shortage risk are wired to
@@ -67,13 +67,25 @@ export function OverviewPage() {
         <MetricCard
           icon={<CalendarDays className="h-4 w-4" />}
           label="Days remaining"
-          badge={planning ? <EstimateBadge tag={planning.daysRemaining.tag} /> : undefined}
-          value={planning ? formatDays(planning.daysRemaining.value) : undefined}
+          badge={
+            planning && planning.sevenDayAverageConsumptionL.value > 0 ? (
+              <EstimateBadge tag={planning.daysRemaining.tag} />
+            ) : undefined
+          }
+          value={
+            planning
+              ? formatDaysRemainingDisplay(
+                  planning.daysRemaining.value,
+                  planning.sevenDayAverageConsumptionL.value,
+                )
+              : undefined
+          }
           hint={
             planning
-              ? planning.weatherApplied
-                ? 'Weather forecast available'
-                : 'Weather forecast unavailable — based on usage data only'
+              ? daysRemainingHint(
+                  planning.sevenDayAverageConsumptionL.value,
+                  planning.weatherApplied,
+                )
               : undefined
           }
         />

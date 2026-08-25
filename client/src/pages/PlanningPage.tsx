@@ -5,7 +5,7 @@ import { SectionCard } from '@/components/shared/SectionCard'
 import { StatusBadge, shortageTierTone } from '@/components/shared/StatusBadge'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
-import { formatDays, formatLitersPerDay, formatTierLabel } from '@/lib/format'
+import { daysRemainingHint, formatDaysRemainingDisplay, formatLitersPerDay, formatTierLabel } from '@/lib/format'
 
 function consumptionHint(observedDays: number, dailyL: number): string {
   if (dailyL <= 0 && observedDays < 1) return 'No irrigation use recorded yet this session.'
@@ -55,13 +55,25 @@ export function PlanningPage() {
         <MetricCard
           icon={<CalendarDays className="h-4 w-4" />}
           label="Days of water remaining"
-          badge={planning ? <EstimateBadge tag={planning.daysRemaining.tag} /> : undefined}
-          value={planning ? formatDays(planning.daysRemaining.value) : undefined}
+          badge={
+            planning && planning.sevenDayAverageConsumptionL.value > 0 ? (
+              <EstimateBadge tag={planning.daysRemaining.tag} />
+            ) : undefined
+          }
+          value={
+            planning
+              ? formatDaysRemainingDisplay(
+                  planning.daysRemaining.value,
+                  planning.sevenDayAverageConsumptionL.value,
+                )
+              : undefined
+          }
           hint={
             planning
-              ? planning.weatherApplied
-                ? 'Weather forecast available'
-                : 'Weather forecast unavailable — based on usage data only'
+              ? daysRemainingHint(
+                  planning.sevenDayAverageConsumptionL.value,
+                  planning.weatherApplied,
+                )
               : undefined
           }
         />
