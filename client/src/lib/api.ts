@@ -12,6 +12,7 @@ import type {
   TankConfig,
   WaterSnapshot,
   WaterSource,
+  TextToSpeechErrorResponse,
 } from '@aquaflow/shared'
 
 async function getJson<T>(path: string): Promise<T> {
@@ -92,5 +93,25 @@ export const api = {
     })
     if (!res.ok) throw new Error(`/api/assistant/speech responded with ${res.status}`)
     return (await res.json()) as SpeechToTextResponse
+  },
+  speakAssistantReply: async (text: string, signal?: AbortSignal): Promise<Blob> => {
+    const res = await fetch('/api/assistant/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+      signal,
+    })
+    const type = res.headers.get('content-type') ?? ''
+    if (type.includes('audio')) {
+      return await res.blob()
+    }
+    let reason = "Couldn't speak that. The written answer is still on screen."
+    try {
+      const body = (await res.json()) as TextToSpeechErrorResponse
+      if (body.reason) reason = body.reason
+    } catch {
+      // Keep the default farmer message.
+    }
+    throw new Error(reason)
   },
 }

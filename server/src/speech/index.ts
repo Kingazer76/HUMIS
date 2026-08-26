@@ -1,9 +1,13 @@
-import { KHAYA_API_KEY, KHAYA_ASR_LANGUAGE, KHAYA_ASR_URL } from '../env.js'
+import { KHAYA_API_KEY, KHAYA_ASR_LANGUAGE, KHAYA_ASR_URL, KHAYA_TTS_LANGUAGE, KHAYA_TTS_SPEAKER, KHAYA_TTS_URL } from '../env.js'
 import { KhayaSpeechToTextProvider } from './khayaSpeechToText.js'
+import { KhayaTextToSpeechProvider } from './khayaTextToSpeech.js'
 import type { SpeechToTextProvider } from './speechToTextProvider.js'
+import type { TextToSpeechProvider } from './textToSpeechProvider.js'
 import { UnavailableSpeechToTextProvider } from './unavailableSpeechToText.js'
+import { UnavailableTextToSpeechProvider } from './unavailableTextToSpeech.js'
 
 export type { SpeechToTextProvider } from './speechToTextProvider.js'
+export type { TextToSpeechProvider } from './textToSpeechProvider.js'
 
 function createSpeechToTextProvider(): SpeechToTextProvider {
   const key = KHAYA_API_KEY.trim()
@@ -17,13 +21,35 @@ function createSpeechToTextProvider(): SpeechToTextProvider {
   return new UnavailableSpeechToTextProvider()
 }
 
-let current: SpeechToTextProvider = createSpeechToTextProvider()
-
-export function getSpeechToTextProvider(): SpeechToTextProvider {
-  return current
+function createTextToSpeechProvider(): TextToSpeechProvider {
+  const key = KHAYA_API_KEY.trim()
+  if (key) {
+    return new KhayaTextToSpeechProvider({
+      key,
+      language: KHAYA_TTS_LANGUAGE,
+      synthesizeUrl: KHAYA_TTS_URL,
+      speaker: KHAYA_TTS_SPEAKER,
+    })
+  }
+  return new UnavailableTextToSpeechProvider()
 }
 
-/** Test isolation — production always uses `createSpeechToTextProvider()`. */
+let currentSpeech: SpeechToTextProvider = createSpeechToTextProvider()
+let currentVoice: TextToSpeechProvider = createTextToSpeechProvider()
+
+export function getSpeechToTextProvider(): SpeechToTextProvider {
+  return currentSpeech
+}
+
+export function getTextToSpeechProvider(): TextToSpeechProvider {
+  return currentVoice
+}
+
+/** Test isolation — production always uses the create* helpers. */
 export function setSpeechToTextProviderForTests(provider: SpeechToTextProvider | null): void {
-  current = provider ?? createSpeechToTextProvider()
+  currentSpeech = provider ?? createSpeechToTextProvider()
+}
+
+export function setTextToSpeechProviderForTests(provider: TextToSpeechProvider | null): void {
+  currentVoice = provider ?? createTextToSpeechProvider()
 }

@@ -56,3 +56,15 @@ export const KHAYA_ASR_LANGUAGE = process.env.KHAYA_ASR_LANGUAGE ?? 'eng'
 
 /** Optional override of the Khaya ASR v3 transcribe URL. */
 export const KHAYA_ASR_URL = process.env.KHAYA_ASR_URL ?? ''
+
+/**
+ * Khaya TTS language code. Phase 8B speaks African English (`eng`).
+ * Ghanaian-language switching is Phase 8C.
+ */
+export const KHAYA_TTS_LANGUAGE = process.env.KHAYA_TTS_LANGUAGE ?? 'eng'
+
+/** Optional override of the Khaya TTS v2 synthesize URL. */
+export const KHAYA_TTS_URL = process.env.KHAYA_TTS_URL ?? ''
+
+/** Optional Khaya voice: male_low, male_high, or female. Empty uses Khaya's default. */
+export const KHAYA_TTS_SPEAKER = process.env.KHAYA_TTS_SPEAKER ?? ''

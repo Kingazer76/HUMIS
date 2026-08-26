@@ -266,4 +266,10 @@ export interface SpeechToTextResponse {
   reason?: string
 }
 
+/** JSON error shape for POST /api/assistant/speak. Success returns audio bytes, not this object. */
+export interface TextToSpeechErrorResponse {
+  ok: false
+  reason: string
+}
+
 export const AQUAFLOW_SHARED_VERSION = '0.6.0'

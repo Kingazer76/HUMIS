@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
 import { Router } from 'express'
 import { handleAssistantMessage } from '../assistant/handleMessage.js'
-import { getSpeechToTextProvider } from '../speech/index.js'
+import { getSpeechToTextProvider, getTextToSpeechProvider } from '../speech/index.js'
 
 export const assistantRouter = Router()
 
@@ -51,3 +51,30 @@ export async function transcribeSpeech(req: Request, res: Response, next: NextFu
     next(error)
   }
 }
+
+const SPEAK_RETRY = "Couldn't speak that. The written answer is still on screen."
+
+/**
+ * Text-to-speech only. Speaks the exact assistant reply.
+ * This route never calls the safety controller, farm math, or chat.
+ */
+export async function speakReply(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const text = req.body?.text
+    if (typeof text !== 'string') {
+      res.status(400).json({ ok: false, reason: 'Request body must include a string "text"' })
+      return
+    }
+    const result = await getTextToSpeechProvider().speak(text)
+    if (!result.ok || !result.audio) {
+      res.json({ ok: false, reason: result.reason ?? SPEAK_RETRY })
+      return
+    }
+    res.setHeader('Content-Type', result.contentType ?? 'audio/wav')
+    res.send(result.audio)
+  } catch (error) {
+    next(error)
+  }
+}
+
+assistantRouter.post('/speak', speakReply)
