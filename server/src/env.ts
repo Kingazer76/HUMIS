@@ -18,8 +18,17 @@ function loadLocalEnvFile() {
       const eq = line.indexOf('=')
       if (eq <= 0) continue
       const key = line.slice(0, eq).trim()
-      const value = line.slice(eq + 1).trim()
-      if (process.env[key] === undefined) process.env[key] = value
+      let value = line.slice(eq + 1).trim()
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1)
+      }
+      // Skip blanks so an empty `.env` placeholder cannot block a later real key.
+      if (!key || !value) continue
+      if (process.env[key]) continue
+      process.env[key] = value
     }
   }
 }
@@ -47,6 +56,12 @@ export const AUTO_IRRIGATION_INTERVAL_MS = Number(process.env.AUTO_IRRIGATION_IN
 
 /** Khaya AI API key — server only. Never send this to the browser. */
 export const KHAYA_API_KEY = process.env.KHAYA_API_KEY ?? ''
+
+/** Live read so a server env / `.env` key is picked up without a stale empty snapshot. */
+export function getKhayaApiKey(): string {
+  loadLocalEnvFile()
+  return (process.env.KHAYA_API_KEY ?? '').trim()
+}
 
 /**
  * Khaya ASR language code. Phase 8A listens in African English (`eng`).

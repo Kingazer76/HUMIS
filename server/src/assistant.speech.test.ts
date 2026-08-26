@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import request from 'supertest'
 import { createApp } from './app.js'
 import { resetFarmSettingsForTests } from './config/farmSettings.js'
@@ -81,5 +81,35 @@ describe('POST /api/assistant/speech', () => {
     expect(res.body.ok).toBe(false)
     expect(res.body.text).toBeUndefined()
     expect(res.body.reason).toMatch(/KHAYA_API_KEY/)
+  })
+
+  it('reads KHAYA_API_KEY from the server environment and calls Khaya ASR', async () => {
+    const previous = process.env.KHAYA_API_KEY
+    process.env.KHAYA_API_KEY = 'env-test-key'
+    setSpeechToTextProviderForTests(null)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ text: 'How much water do I have?' }),
+      }),
+    )
+    try {
+      const res = await request(app)
+        .post('/api/assistant/speech')
+        .set('Content-Type', 'audio/wav')
+        .send(Buffer.alloc(256, 1))
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual({ ok: true, text: 'How much water do I have?' })
+      const [calledUrl, init] = vi.mocked(fetch).mock.calls[0] ?? []
+      expect(String(calledUrl)).toContain('translation-api.ghananlp.org/asr/v3/transcribe')
+      expect((init as RequestInit | undefined)?.headers).toMatchObject({
+        'Ocp-Apim-Subscription-Key': 'env-test-key',
+      })
+    } finally {
+      vi.unstubAllGlobals()
+      if (previous === undefined) delete process.env.KHAYA_API_KEY
+      else process.env.KHAYA_API_KEY = previous
+    }
   })
 })

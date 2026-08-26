@@ -1,4 +1,4 @@
-import { KHAYA_API_KEY, KHAYA_ASR_LANGUAGE, KHAYA_ASR_URL, KHAYA_TTS_LANGUAGE, KHAYA_TTS_SPEAKER, KHAYA_TTS_URL } from '../env.js'
+import { getKhayaApiKey, KHAYA_ASR_LANGUAGE, KHAYA_ASR_URL, KHAYA_TTS_LANGUAGE, KHAYA_TTS_SPEAKER, KHAYA_TTS_URL } from '../env.js'
 import { KhayaSpeechToTextProvider } from './khayaSpeechToText.js'
 import { KhayaTextToSpeechProvider } from './khayaTextToSpeech.js'
 import type { SpeechToTextProvider } from './speechToTextProvider.js'
@@ -10,7 +10,7 @@ export type { SpeechToTextProvider } from './speechToTextProvider.js'
 export type { TextToSpeechProvider } from './textToSpeechProvider.js'
 
 function createSpeechToTextProvider(): SpeechToTextProvider {
-  const key = KHAYA_API_KEY.trim()
+  const key = getKhayaApiKey()
   if (key) {
     return new KhayaSpeechToTextProvider({
       key,
@@ -22,7 +22,7 @@ function createSpeechToTextProvider(): SpeechToTextProvider {
 }
 
 function createTextToSpeechProvider(): TextToSpeechProvider {
-  const key = KHAYA_API_KEY.trim()
+  const key = getKhayaApiKey()
   if (key) {
     return new KhayaTextToSpeechProvider({
       key,
@@ -34,22 +34,22 @@ function createTextToSpeechProvider(): TextToSpeechProvider {
   return new UnavailableTextToSpeechProvider()
 }
 
-let currentSpeech: SpeechToTextProvider = createSpeechToTextProvider()
-let currentVoice: TextToSpeechProvider = createTextToSpeechProvider()
+let speechOverride: SpeechToTextProvider | null = null
+let voiceOverride: TextToSpeechProvider | null = null
 
 export function getSpeechToTextProvider(): SpeechToTextProvider {
-  return currentSpeech
+  return speechOverride ?? createSpeechToTextProvider()
 }
 
 export function getTextToSpeechProvider(): TextToSpeechProvider {
-  return currentVoice
+  return voiceOverride ?? createTextToSpeechProvider()
 }
 
 /** Test isolation — production always uses the create* helpers. */
 export function setSpeechToTextProviderForTests(provider: SpeechToTextProvider | null): void {
-  currentSpeech = provider ?? createSpeechToTextProvider()
+  speechOverride = provider
 }
 
 export function setTextToSpeechProviderForTests(provider: TextToSpeechProvider | null): void {
-  currentVoice = provider ?? createTextToSpeechProvider()
+  voiceOverride = provider
 }
