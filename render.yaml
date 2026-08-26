@@ -1,0 +1,12 @@
+# One always-on Node service: built UI + /api + simulation loops.
+# Render Blueprint — you can also enter the same settings in the dashboard.
+services:
+  - type: web
+    name: aquaflow
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: USE_SIMULATED
+        value: "true"

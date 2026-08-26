@@ -45,6 +45,9 @@ export const USE_SIMULATED = (process.env.USE_SIMULATED ?? 'true') !== 'false'
 
 export const PORT = Number(process.env.PORT ?? 5418)
 
+/** Bind address. Render and other hosts need `0.0.0.0`, not localhost-only. */
+export const HOST = process.env.HOST ?? '0.0.0.0'
+
 /** Simulated minutes of farm time advanced per simulation tick. */
 export const SIM_MINUTES_PER_TICK = Number(process.env.SIM_MINUTES_PER_TICK ?? 1)
 

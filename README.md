@@ -83,14 +83,17 @@ npm run dev:server   # Express dev server only (auto-restarts on change via tsx 
 Build everything (type-checks + production bundles):
 
 ```bash
-npm run build
+npm run build      # production UI + server typecheck
+npm start          # one process: UI + /api + farm simulation (uses PORT if set)
 ```
 
-Run the server test suite (includes shortage-prediction and weather fail-safe tests):
+Run tests:
 
 ```bash
 npm test --workspace server
 ```
+
+On Render, use a **Web Service** with the root of this repo. Build `npm install && npm run build`, start `npm start`. Set `USE_SIMULATED=true`. Do not add API keys. Typed assistant works without Khaya; microphone/speak stay optional.
 
 Simulation state and Settings live in memory inside the Express process. Restarting the server
 resets the farm, including tank size, field setup, and farm location. Weather planning uses
