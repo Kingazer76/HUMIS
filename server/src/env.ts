@@ -1,3 +1,31 @@
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+/**
+ * Loads repo-root or server `.env` into `process.env` without overriding
+ * values already set. Secrets stay on the server — never in the browser.
+ */
+function loadLocalEnvFile() {
+  const here = dirname(fileURLToPath(import.meta.url))
+  const candidates = [resolve(here, '../../.env'), resolve(here, '../.env')]
+  for (const file of candidates) {
+    if (!existsSync(file)) continue
+    const text = readFileSync(file, 'utf8')
+    for (const raw of text.split('\n')) {
+      const line = raw.trim()
+      if (!line || line.startsWith('#')) continue
+      const eq = line.indexOf('=')
+      if (eq <= 0) continue
+      const key = line.slice(0, eq).trim()
+      const value = line.slice(eq + 1).trim()
+      if (process.env[key] === undefined) process.env[key] = value
+    }
+  }
+}
+
+loadLocalEnvFile()
+
 /**
  * Centralized env var reads. `USE_SIMULATED` stays `true` for the whole
  * build until real ESP32 hardware integration is explicitly requested
@@ -16,3 +44,12 @@ export const SIM_TICK_INTERVAL_MS = Number(process.env.SIM_TICK_INTERVAL_MS ?? 5
 
 /** Real milliseconds between automatic irrigation decision cycles (Auto mode only). */
 export const AUTO_IRRIGATION_INTERVAL_MS = Number(process.env.AUTO_IRRIGATION_INTERVAL_MS ?? 5000)
+
+/** Azure Speech key — server only. Never send this to the browser. */
+export const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY ?? ''
+
+/** Azure Speech region, e.g. `eastus` or `westeurope`. */
+export const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION ?? ''
+
+/** Spoken locale for speech-to-text. Ghanaian English is the Phase 8A default. */
+export const AZURE_SPEECH_LOCALE = process.env.AZURE_SPEECH_LOCALE ?? 'en-GH'

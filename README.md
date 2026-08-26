@@ -16,10 +16,11 @@ V3 combines:
   `DeviceProvider`, so a simulated farm today can become a real ESP32-driven farm later
   without a redesign.
 
-This repository is being built in staged phases. **Phases 0–7 are complete.**
+This repository is being built in staged phases. **Phases 0–8A are complete.**
 Settings writes live farm numbers. Overview leads with water, crops, weather, shortage,
 days remaining, and watering status. The AquaFlow Assistant in the header can answer
-farm questions and start or stop watering through the same safety gate as the Irrigation tab.
+farm questions, start or stop watering through the same safety gate as the Irrigation tab,
+and listen with the microphone when Azure Speech is configured.
 
 ## Why a flow-sensor disclaimer matters
 
@@ -54,6 +55,21 @@ npm run dev        # starts both the client (Vite) and the server (Express) toge
 
 The Vite dev server proxies any `/api/*` request to the Express server, so the browser only
 ever talks to port 5417.
+
+### Voice listening (Phase 8A)
+
+Typed chat works with no extra setup. To let the microphone turn speech into text, create an
+Azure Speech resource and copy `.env.example` to `.env` in the repo root:
+
+```
+AZURE_SPEECH_KEY=your-key
+AZURE_SPEECH_REGION=eastus
+AZURE_SPEECH_LOCALE=en-GH
+```
+
+Those values stay on the server. Restart `npm run dev` after editing `.env`. If they are
+missing, the microphone still opens, but AquaFlow asks you to set them up instead of guessing
+what was said. The assistant does not speak back yet (that is Phase 8B).
 
 You can also run each side on its own:
 
@@ -95,6 +111,10 @@ shortage result from tank level and usage.
       mark). It is not used as a warning color. Full Adinkra patterning is not in this phase.
 - [x] **Phase 7** — AquaFlow Assistant (text chat). Questions use existing farm data.
       Watering commands go through `safetyController` only — never a second control path.
-- [ ] **Phase 8** — Khaya-backed speech recognition, translation, and text-to-speech.
+- [x] **Phase 8A** — Speech input. Microphone in the existing assistant; Azure Speech
+      (`en-GH`) turns talk into text, then the same Phase 7 `/api/assistant/chat` path.
+      No text-to-speech yet.
+- [ ] **Phase 8B** — Assistant speaks replies (Khaya / text-to-speech).
+- [ ] **Phase 8C** — Ghanaian-language support (translation).
 - [ ] **Phase 9 (deferred)** — real ESP32 hardware integration. Not started; `USE_SIMULATED`
       stays `true` until this is explicitly requested.

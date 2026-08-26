@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { MessageCircle, Send } from '@/lib/icons'
+import { MessageCircle, Mic, Send } from '@/lib/icons'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api'
+import { startSpeechRecording, type SpeechRecorder } from '@/lib/recordSpeech'
 import { cn } from '@/lib/utils'
 
 interface ChatMessage {
@@ -26,23 +27,33 @@ const SUGGESTIONS = [
   'Stop watering',
 ]
 
+const RETRY = "I didn't catch that. Tap the microphone and try again."
+
 /**
- * Header chat for the AquaFlow Assistant. Questions use existing farm
- * numbers. Watering commands go to `/api/assistant/chat`, which only
- * actuates through `safetyController`.
+ * Header chat for the AquaFlow Assistant. Typed messages and recognized
+ * speech both go to `/api/assistant/chat` — the same Phase 7 path.
  */
 export function AssistantChat() {
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const [pending, setPending] = useState(false)
+  const [listening, setListening] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const nextId = useRef(1)
+  const recorderRef = useRef<SpeechRecorder | null>(null)
+  const finishingRef = useRef(false)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' })
-  }, [messages, pending])
+  }, [messages, pending, listening])
+
+  useEffect(() => {
+    return () => {
+      void recorderRef.current?.stop()
+    }
+  }, [])
 
   async function send(text: string) {
     const message = text.trim()
@@ -67,8 +78,66 @@ export function AssistantChat() {
     }
   }
 
+  async function startListening() {
+    if (pending || listening) return
+    setError(undefined)
+    try {
+      recorderRef.current = await startSpeechRecording()
+      setListening(true)
+    } catch (err) {
+      const blocked = err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'NotFoundError')
+      setError(
+        blocked
+          ? 'Microphone is blocked. Allow the microphone and try again.'
+          : 'This browser cannot use the microphone. Type your question instead.',
+      )
+    }
+  }
+
+  async function finishListening() {
+    if (finishingRef.current) return
+    const recorder = recorderRef.current
+    if (!recorder) {
+      setListening(false)
+      return
+    }
+    finishingRef.current = true
+    recorderRef.current = null
+    setListening(false)
+    try {
+      const wav = await recorder.stop()
+      const spoken = await api.transcribeSpeech(wav)
+      if (!spoken.ok || !spoken.text?.trim()) {
+        setError(spoken.reason ?? RETRY)
+        return
+      }
+      await send(spoken.text)
+    } catch {
+      setError(RETRY)
+    } finally {
+      finishingRef.current = false
+    }
+  }
+
+  async function toggleListening() {
+    if (listening) {
+      await finishListening()
+      return
+    }
+    await startListening()
+  }
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (!next) {
+      void recorderRef.current?.stop()
+      recorderRef.current = null
+      setListening(false)
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
           <Button
@@ -90,13 +159,13 @@ export function AssistantChat() {
         <DialogHeader>
           <DialogTitle>AquaFlow Assistant</DialogTitle>
           <DialogDescription>
-            Ask about your water, fields, or weather. I use the same safety gate as the Irrigation
-            buttons.
+            Ask about your water, fields, or weather. Tap the microphone to speak. I use the same
+            safety gate as the Irrigation buttons.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-lg border border-border bg-muted/40 p-3">
-          {messages.length === 0 && !pending ? (
+          {messages.length === 0 && !pending && !listening ? (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-muted-foreground">Try one of these:</p>
               <div className="flex flex-col gap-2">
@@ -128,6 +197,7 @@ export function AssistantChat() {
               </div>
             ))
           )}
+          {listening ? <p className="text-sm font-medium text-primary">Listening…</p> : null}
           {pending ? <p className="text-sm text-muted-foreground">Thinking…</p> : null}
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <div ref={bottomRef} />
@@ -145,10 +215,23 @@ export function AssistantChat() {
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Ask about water, crops, or weather"
             aria-label="Message to AquaFlow Assistant"
-            disabled={pending}
+            disabled={pending || listening}
             className="h-10"
           />
-          <Button type="submit" disabled={pending || draft.trim() === ''} aria-label="Send message">
+          <Button
+            type="button"
+            variant={listening ? 'default' : 'outline'}
+            size="icon"
+            className="h-10 w-10 shrink-0"
+            disabled={pending}
+            aria-label={listening ? 'Listening. Tap to send.' : 'Tap to speak'}
+            title={listening ? 'Listening…' : 'Tap to speak'}
+            aria-pressed={listening}
+            onClick={() => void toggleListening()}
+          >
+            <Mic className="h-4 w-4" aria-hidden="true" />
+          </Button>
+          <Button type="submit" disabled={pending || listening || draft.trim() === ''} aria-label="Send message">
             <Send className="h-4 w-4" aria-hidden="true" />
           </Button>
         </form>

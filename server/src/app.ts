@@ -1,6 +1,6 @@
 import cors from 'cors'
 import express, { type Express } from 'express'
-import { assistantRouter } from './routes/assistant.js'
+import { assistantRouter, transcribeSpeech } from './routes/assistant.js'
 import { historyRouter } from './routes/history.js'
 import { irrigationRouter } from './routes/irrigation.js'
 import { planningRouter } from './routes/planning.js'
@@ -18,6 +18,7 @@ import { zonesRouter } from './routes/zones.js'
 export function createApp(): Express {
   const app = express()
   app.use(cors())
+  app.post('/api/assistant/speech', express.raw({ type: () => true, limit: '4mb' }), transcribeSpeech)
   app.use(express.json())
 
   app.get('/api/health', (_req, res) => {

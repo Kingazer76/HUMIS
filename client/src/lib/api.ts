@@ -7,6 +7,7 @@ import type {
   PlanningSnapshot,
   SettingsActionResult,
   SettingsSnapshot,
+  SpeechToTextResponse,
   SystemSnapshot,
   TankConfig,
   WaterSnapshot,
@@ -83,4 +84,13 @@ export const api = {
     postJson<IrrigationActionResult>('/api/irrigation/mode', { mode }),
   sendAssistantMessage: (message: string) =>
     postJson<AssistantChatResponse>('/api/assistant/chat', { message }),
+  transcribeSpeech: async (audio: Blob): Promise<SpeechToTextResponse> => {
+    const res = await fetch('/api/assistant/speech', {
+      method: 'POST',
+      headers: { 'Content-Type': audio.type || 'audio/wav' },
+      body: audio,
+    })
+    if (!res.ok) throw new Error(`/api/assistant/speech responded with ${res.status}`)
+    return (await res.json()) as SpeechToTextResponse
+  },
 }

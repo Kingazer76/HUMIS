@@ -259,4 +259,11 @@ export interface AssistantChatResponse {
   action?: IrrigationActionResult
 }
 
+/** Response shape for POST /api/assistant/speech. `ok: false` means try again — never a guessed transcript. */
+export interface SpeechToTextResponse {
+  ok: boolean
+  text?: string
+  reason?: string
+}
+
 export const AQUAFLOW_SHARED_VERSION = '0.6.0'
