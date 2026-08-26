@@ -80,6 +80,6 @@ describe('POST /api/assistant/speech', () => {
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(false)
     expect(res.body.text).toBeUndefined()
-    expect(res.body.reason).toMatch(/AZURE_SPEECH_KEY/)
+    expect(res.body.reason).toMatch(/KHAYA_API_KEY/)
   })
 })

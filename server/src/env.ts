@@ -45,11 +45,14 @@ export const SIM_TICK_INTERVAL_MS = Number(process.env.SIM_TICK_INTERVAL_MS ?? 5
 /** Real milliseconds between automatic irrigation decision cycles (Auto mode only). */
 export const AUTO_IRRIGATION_INTERVAL_MS = Number(process.env.AUTO_IRRIGATION_INTERVAL_MS ?? 5000)
 
-/** Azure Speech key — server only. Never send this to the browser. */
-export const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY ?? ''
+/** Khaya AI API key — server only. Never send this to the browser. */
+export const KHAYA_API_KEY = process.env.KHAYA_API_KEY ?? ''
 
-/** Azure Speech region, e.g. `eastus` or `westeurope`. */
-export const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION ?? ''
+/**
+ * Khaya ASR language code. Phase 8A listens in African English (`eng`).
+ * Ghanaian-language switching is Phase 8C.
+ */
+export const KHAYA_ASR_LANGUAGE = process.env.KHAYA_ASR_LANGUAGE ?? 'eng'
 
-/** Spoken locale for speech-to-text. Ghanaian English is the Phase 8A default. */
-export const AZURE_SPEECH_LOCALE = process.env.AZURE_SPEECH_LOCALE ?? 'en-GH'
+/** Optional override of the Khaya ASR v3 transcribe URL. */
+export const KHAYA_ASR_URL = process.env.KHAYA_ASR_URL ?? ''

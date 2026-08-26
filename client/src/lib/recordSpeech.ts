@@ -62,7 +62,7 @@ export interface SpeechRecorder {
 }
 
 /**
- * Records microphone audio as 16 kHz WAV for Azure Speech.
+ * Records microphone audio as 16 kHz WAV for Khaya ASR.
  * Hold-to-talk is not required: tap to start, tap again to stop.
  */
 export async function startSpeechRecording(): Promise<SpeechRecorder> {

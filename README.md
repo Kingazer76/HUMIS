@@ -20,7 +20,7 @@ This repository is being built in staged phases. **Phases 0–8A are complete.**
 Settings writes live farm numbers. Overview leads with water, crops, weather, shortage,
 days remaining, and watering status. The AquaFlow Assistant in the header can answer
 farm questions, start or stop watering through the same safety gate as the Irrigation tab,
-and listen with the microphone when Azure Speech is configured.
+and listen with the microphone when Khaya AI speech recognition is configured.
 
 ## Why a flow-sensor disclaimer matters
 
@@ -34,7 +34,7 @@ presenting an estimate as if it were a real sensor reading.
 - **`client/`** — React + Vite + TypeScript + Tailwind CSS + shadcn/ui. Renders the six tabs
   (Overview, Irrigation, Water, Planning, History, Settings) via `react-router-dom`.
 - **`server/`** — Node + Express + TypeScript. Holds the simulation loop, the water/
-  irrigation domain logic, planning/shortage prediction, and any secrets (e.g. a future Khaya
+  irrigation domain logic, planning/shortage prediction, and any secrets (e.g. the Khaya
   API key) that must never reach the browser bundle.
 - **`shared/`** — TypeScript types shared between `client` and `server`.
 
@@ -58,18 +58,19 @@ ever talks to port 5417.
 
 ### Voice listening (Phase 8A)
 
-Typed chat works with no extra setup. To let the microphone turn speech into text, create an
-Azure Speech resource and copy `.env.example` to `.env` in the repo root:
+Typed chat works with no extra setup. To let the microphone turn speech into text, get a
+Khaya AI API key from https://translation.ghananlp.org and copy `.env.example` to `.env`
+in the repo root:
 
 ```
-AZURE_SPEECH_KEY=your-key
-AZURE_SPEECH_REGION=eastus
-AZURE_SPEECH_LOCALE=en-GH
+KHAYA_API_KEY=your-key
+KHAYA_ASR_LANGUAGE=eng
 ```
 
-Those values stay on the server. Restart `npm run dev` after editing `.env`. If they are
-missing, the microphone still opens, but AquaFlow asks you to set them up instead of guessing
-what was said. The assistant does not speak back yet (that is Phase 8B).
+`KHAYA_API_KEY` stays on the server. Restart `npm run dev` after editing `.env`. If the key
+is missing, the microphone still opens, but AquaFlow asks you to set it up instead of guessing
+what was said. The assistant does not speak back yet (that is Phase 8B). Ghanaian-language
+switching is Phase 8C.
 
 You can also run each side on its own:
 
@@ -111,8 +112,8 @@ shortage result from tank level and usage.
       mark). It is not used as a warning color. Full Adinkra patterning is not in this phase.
 - [x] **Phase 7** — AquaFlow Assistant (text chat). Questions use existing farm data.
       Watering commands go through `safetyController` only — never a second control path.
-- [x] **Phase 8A** — Speech input. Microphone in the existing assistant; Azure Speech
-      (`en-GH`) turns talk into text, then the same Phase 7 `/api/assistant/chat` path.
+- [x] **Phase 8A** — Speech input. Microphone in the existing assistant; Khaya AI ASR
+      (`eng`) turns talk into text, then the same Phase 7 `/api/assistant/chat` path.
       No text-to-speech yet.
 - [ ] **Phase 8B** — Assistant speaks replies (Khaya / text-to-speech).
 - [ ] **Phase 8C** — Ghanaian-language support (translation).

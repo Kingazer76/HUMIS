@@ -1,18 +1,17 @@
-import { AZURE_SPEECH_KEY, AZURE_SPEECH_LOCALE, AZURE_SPEECH_REGION } from '../env.js'
-import { AzureSpeechToTextProvider } from './azureSpeechToText.js'
+import { KHAYA_API_KEY, KHAYA_ASR_LANGUAGE, KHAYA_ASR_URL } from '../env.js'
+import { KhayaSpeechToTextProvider } from './khayaSpeechToText.js'
 import type { SpeechToTextProvider } from './speechToTextProvider.js'
 import { UnavailableSpeechToTextProvider } from './unavailableSpeechToText.js'
 
 export type { SpeechToTextProvider } from './speechToTextProvider.js'
 
 function createSpeechToTextProvider(): SpeechToTextProvider {
-  const key = AZURE_SPEECH_KEY.trim()
-  const region = AZURE_SPEECH_REGION.trim()
-  if (key && region) {
-    return new AzureSpeechToTextProvider({
+  const key = KHAYA_API_KEY.trim()
+  if (key) {
+    return new KhayaSpeechToTextProvider({
       key,
-      region,
-      locale: AZURE_SPEECH_LOCALE.trim() || 'en-GH',
+      language: KHAYA_ASR_LANGUAGE,
+      transcribeUrl: KHAYA_ASR_URL,
     })
   }
   return new UnavailableSpeechToTextProvider()
