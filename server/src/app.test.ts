@@ -95,6 +95,14 @@ describe('GET /api/planning', () => {
     expect(res.body.adjustedDailyConsumptionL.tag).toBe('estimated')
     expect(res.body.sevenDayAverageConsumptionL.tag).toBe('estimated')
     expect(typeof res.body.weatherApplied).toBe('boolean')
+    expect(res.body.weather).toBeDefined()
+    expect(typeof res.body.weather.available).toBe('boolean')
+    if (res.body.weather.available) {
+      expect(res.body.weather.source).toBe('open-meteo')
+      expect(res.body.weather.temperatureC.tag).toBe('forecast')
+      expect(res.body.weather.location.latitude).toBeTypeOf('number')
+      expect(Array.isArray(res.body.weather.days)).toBe(true)
+    }
     expect(typeof res.body.observedDays).toBe('number')
     expect(res.body.observedDays).toBeGreaterThanOrEqual(0)
   })

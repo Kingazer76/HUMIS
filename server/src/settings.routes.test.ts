@@ -23,6 +23,11 @@ describe('GET/PUT /api/settings', () => {
     expect(res.status).toBe(200)
     expect(res.body.tank).toEqual(TANK_CONFIG)
     expect(res.body.tankDefaults).toEqual(TANK_CONFIG)
+    expect(res.body.location).toEqual({
+      latitude: 6.6885,
+      longitude: -1.6244,
+      label: 'Kumasi, Ghana',
+    })
     expect(Array.isArray(res.body.zones)).toBe(true)
     expect(res.body.zones.length).toBe(2)
     expect(res.body.crops.map((c: { id: string }) => c.id)).toEqual(['maize', 'tomato'])
@@ -233,5 +238,18 @@ describe('GET/PUT /api/settings', () => {
     const restored = await request(app).post('/api/settings/tank/defaults').send()
     expect(restored.body.ok).toBe(true)
     expect(restored.body.tank).toEqual(TANK_CONFIG)
+  })
+
+  it('saves a farm location used by the weather forecast', async () => {
+    const saved = await request(app).put('/api/settings/location').send({
+      latitude: 5.55,
+      longitude: -0.2,
+      label: 'Accra, Ghana',
+    })
+    expect(saved.body.ok).toBe(true)
+    expect(saved.body.location.label).toBe('Accra, Ghana')
+
+    const res = await request(app).get('/api/settings')
+    expect(res.body.location).toEqual({ latitude: 5.55, longitude: -0.2, label: 'Accra, Ghana' })
   })
 })

@@ -1,4 +1,5 @@
 import { AlertTriangle, CalendarDays, CloudSun, Leaf, ShieldCheck } from '@/lib/icons'
+import type { WeatherForecastSnapshot } from '@aquaflow/shared'
 import { EstimateBadge } from '@/components/shared/EstimateBadge'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionCard } from '@/components/shared/SectionCard'
@@ -10,7 +11,7 @@ import {
 import { VisualGlance } from '@/components/visual/VisualGlance'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
-import { daysRemainingHint, formatDaysRemainingDisplay, formatLitersPerDay } from '@/lib/format'
+import { daysRemainingHint, formatDaysRemainingDisplay, formatLitersPerDay, formatMm, formatPercent, formatTemperatureC } from '@/lib/format'
 import {
   deriveShortageVisualState,
   deriveTankVisualState,
@@ -41,23 +42,103 @@ function alertsCopy(tier: 'low' | 'moderate' | 'high' | 'critical'): string {
   return 'No active alerts. Water looks fine.'
 }
 
+function formatForecastDay(date: string): string {
+  const parsed = new Date(`${date}T12:00:00`)
+  if (Number.isNaN(parsed.getTime())) return date
+  return parsed.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+function WeatherPlanningSection({
+  weather,
+  weatherApplied,
+  loading,
+}: {
+  weather: WeatherForecastSnapshot | undefined
+  weatherApplied: boolean | undefined
+  loading: boolean
+}) {
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Loading the weather forecast…</p>
+  }
+  if (!weather?.available || !weather.condition) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        {weather?.reason ??
+          "Can't load the weather forecast right now. Days remaining still uses stored water and recent watering."}
+      </p>
+    )
+  }
+
+  const weatherVisual = deriveWeatherVisualState({
+    isRaining: weather.condition === 'rain',
+    condition: weather.condition,
+  })
+  const place = weather.location?.label
+  const temp = weather.temperatureC ? formatTemperatureC(weather.temperatureC.value) : undefined
+  const humidity = weather.humidityPct ? formatPercent(weather.humidityPct.value) : undefined
+  const chance = weather.precipitationProbabilityPct
+    ? formatPercent(weather.precipitationProbabilityPct.value)
+    : undefined
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <EstimateBadge tag="forecast" />
+      </div>
+      <VisualGlance
+        illustration={<WeatherIllustration state={weatherVisual} />}
+        headline={weatherVisualHeadline(weatherVisual, 'forecast')}
+        detail={
+          <>
+            {weatherVisualDetail(weatherVisual, 'forecast')}{' '}
+            {weatherApplied
+              ? 'Rain chance is included and may slightly change days remaining.'
+              : 'Days remaining still uses stored water and recent watering.'}
+          </>
+        }
+      />
+      <p className="text-sm text-foreground">
+        {[temp, humidity ? `Humidity ${humidity}` : undefined, chance ? `Rain chance ${chance}` : undefined]
+          .filter(Boolean)
+          .join(' · ')}
+      </p>
+      <p className="text-[11px] text-muted-foreground/70">
+        Open-Meteo forecast{place ? ` for ${place}` : ''}. This is not the simulated farm rain sensor.
+      </p>
+      {weather.days && weather.days.length > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          {weather.days.map((day) => (
+            <div key={day.date} className="flex justify-between gap-3 text-sm text-muted-foreground">
+              <span>{formatForecastDay(day.date)}</span>
+              <span className="tabular-nums text-foreground">
+                {formatTemperatureC(day.temperatureMinC.value)}–{formatTemperatureC(day.temperatureMaxC.value)}
+                {' · '}
+                {formatPercent(day.precipitationProbabilityPct.value)} rain
+                {' · '}
+                {formatMm(day.precipitationMm.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 /**
- * Planning tab. Shortage and weather pictures reuse the same prediction
- * and rain reading as Overview — they do not compute a second forecast.
+ * Planning tab. Shortage pictures reuse the same prediction as Overview.
+ * Rain and weather on this page comes from the live Open-Meteo forecast,
+ * not from the simulated farm rain sensor.
  */
 export function PlanningPage() {
   const { data: planning, error: planningError } = usePolling(api.getPlanning)
   const { data: water } = usePolling(api.getWater)
-  const { data: system } = usePolling(api.getSystem)
 
   const fillPct = water ? (water.mainTankL.value / water.tank.capacityL) * 100 : undefined
   const tankVisual =
     fillPct !== undefined && water
       ? deriveTankVisualState(fillPct, water.tank.lowThresholdPct, water.tank.criticalThresholdPct)
       : undefined
-  const weatherVisual = system
-    ? deriveWeatherVisualState({ isRaining: system.rain.isRaining.value })
-    : undefined
   const shortageVisual = planning ? deriveShortageVisualState(planning.tier) : undefined
 
   return (
@@ -125,22 +206,11 @@ export function PlanningPage() {
 
       <div className="grid gap-5 sm:grid-cols-2">
         <SectionCard icon={<CloudSun className="h-4 w-4" />} title="Rain and weather">
-          {weatherVisual ? (
-            <VisualGlance
-              illustration={<WeatherIllustration state={weatherVisual} />}
-              headline={weatherVisualHeadline(weatherVisual)}
-              detail={
-                <>
-                  {weatherVisualDetail(weatherVisual)}{' '}
-                  {planning
-                    ? planning.weatherApplied
-                      ? 'Rain chance is included and may slightly change days remaining.'
-                      : 'Days remaining still uses stored water and recent watering.'
-                    : null}
-                </>
-              }
-            />
-          ) : undefined}
+          <WeatherPlanningSection
+            weather={planning?.weather}
+            weatherApplied={planning?.weatherApplied}
+            loading={!planning && !planningError}
+          />
         </SectionCard>
         <MetricCard
           icon={<Leaf className="h-4 w-4" />}
@@ -160,6 +230,7 @@ export function PlanningPage() {
       <p className="text-xs text-muted-foreground">
         Predictions are estimates from this simulated farm and are not guaranteed. Days remaining uses
         stored tank water only (fields never drink from the other water sources) divided by recent watering.
+        Rain and weather on this page is a real forecast. Tank, soil, and the farm rain sensor stay simulated.
       </p>
     </div>
   )

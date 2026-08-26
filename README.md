@@ -93,9 +93,10 @@ npm test --workspace server
 ```
 
 Simulation state and Settings live in memory inside the Express process. Restarting the server
-resets the farm, including tank size and field setup. Weather is optional: if the weather
-provider is missing, returns nothing, or throws, planning still returns a valid days-remaining /
-shortage result from tank level and usage.
+resets the farm, including tank size, field setup, and farm location. Weather planning uses
+Open-Meteo (no API key) at the farm's configured coordinates. If the forecast is missing,
+returns nothing, or throws, planning still returns a valid days-remaining / shortage result
+from tank level and usage. The farm rain sensor used for irrigation stays simulated.
 
 ## Project status
 

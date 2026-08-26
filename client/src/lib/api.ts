@@ -1,5 +1,6 @@
 import type {
   AssistantChatResponse,
+  FarmLocation,
   HistorySnapshot,
   IrrigationActionResult,
   IrrigationZone,
@@ -65,6 +66,8 @@ export const api = {
 
   saveTank: (tank: TankConfig) => putJson<SettingsActionResult>('/api/settings/tank', tank),
   restoreTankDefaults: () => postJson<SettingsActionResult>('/api/settings/tank/defaults'),
+  saveLocation: (location: FarmLocation) => putJson<SettingsActionResult>('/api/settings/location', location),
+  restoreLocationDefaults: () => postJson<SettingsActionResult>('/api/settings/location/defaults'),
   saveZone: (
     zoneId: string,
     body: {

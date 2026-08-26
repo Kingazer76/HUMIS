@@ -1,12 +1,30 @@
+import type { FarmLocation, WeatherCondition } from '@aquaflow/shared'
 import type { DeviceProvider } from '../providers/deviceProvider.js'
 import { deviceProvider } from '../providers/index.js'
+import { openMeteoWeatherProvider } from './openMeteoWeatherProvider.js'
 
-export type WeatherCondition = 'clear' | 'rain'
+export type { WeatherCondition }
+
+export interface DailyWeatherForecast {
+  date: string
+  condition: WeatherCondition
+  temperatureMaxC: number
+  temperatureMinC: number
+  precipitationMm: number
+  precipitationProbabilityPct: number
+}
 
 export interface WeatherForecast {
   condition: WeatherCondition
   expectedRainfallMm: number
   asOf: string
+  temperatureC?: number
+  humidityPct?: number
+  precipitationMm?: number
+  precipitationProbabilityPct?: number
+  location?: FarmLocation
+  source?: string
+  days?: DailyWeatherForecast[]
 }
 
 export interface WeatherAdjustment {
@@ -19,19 +37,20 @@ export interface WeatherAdjustment {
  * simulated sensor readings, and must never be required for planning (or
  * irrigation) to function. Any implementation may throw or resolve to
  * `null` to mean "unavailable" — callers must go through
- * `getWeatherAdjustmentSafely` below rather than calling `getForecast`
- * directly, so a failure here can never propagate into a crash.
+ * `getForecastSafely` / `getWeatherAdjustmentSafely` rather than calling
+ * `getForecast` directly, so a failure here can never propagate into a crash.
+ *
+ * Swap this later by pointing `weatherProvider` at a different class that
+ * implements the same interface.
  */
 export interface WeatherProvider {
   getForecast(): Promise<WeatherForecast | null>
 }
 
 /**
- * Derives a lightweight forecast from the existing simulated rain sensor
- * (`DeviceProvider.getRainStatus`) instead of building a second, parallel
- * weather-simulation system. "Weather" stays its own interface — swappable
- * for a real forecast API later — while reusing the one simulated
- * environmental signal this codebase already has.
+ * Kept for tests and as a drop-in swap. Not used on the live forecast
+ * path — that is `OpenMeteoWeatherProvider`. This mock still reads the
+ * simulated rain sensor so old tests can prove the fail-safe wrapper.
  */
 export class MockWeatherProvider implements WeatherProvider {
   constructor(private readonly provider: DeviceProvider = deviceProvider) {}
@@ -42,13 +61,15 @@ export class MockWeatherProvider implements WeatherProvider {
       condition: rain.isRaining.value ? 'rain' : 'clear',
       expectedRainfallMm: rain.isRaining.value ? 4 : 0,
       asOf: new Date().toISOString(),
+      source: 'mock',
     }
   }
 }
 
-export const weatherProvider: WeatherProvider = new MockWeatherProvider()
+/** Active forecast path: Open-Meteo, using the farm's configured location. */
+export const weatherProvider: WeatherProvider = openMeteoWeatherProvider
 
-function toDemandAdjustment(forecast: WeatherForecast): WeatherAdjustment {
+export function toDemandAdjustment(forecast: WeatherForecast): WeatherAdjustment {
   // Expected rain modestly reduces projected irrigation demand. This is a
   // simple, documented multiplier for the planning forecast only — it does
   // not duplicate or replace `irrigationEngine`'s own rain handling, which
@@ -57,19 +78,28 @@ function toDemandAdjustment(forecast: WeatherForecast): WeatherAdjustment {
 }
 
 /**
+ * Never throws: a thrown error, a `null` forecast, or any unexpected
+ * failure all resolve to `null`, meaning "proceed without a forecast."
+ */
+export async function getForecastSafely(
+  provider: WeatherProvider = weatherProvider,
+): Promise<WeatherForecast | null> {
+  try {
+    const forecast = await provider.getForecast()
+    return forecast ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
  * The only way `shortagePrediction` (or anything else) should consult
- * weather. Never throws: a thrown error, a `null` forecast, or any
- * unexpected failure all resolve to `null`, meaning "proceed without a
- * weather adjustment" — never "block the calculation."
+ * weather for days-remaining math. Never throws.
  */
 export async function getWeatherAdjustmentSafely(
   provider: WeatherProvider = weatherProvider,
 ): Promise<WeatherAdjustment | null> {
-  try {
-    const forecast = await provider.getForecast()
-    if (!forecast) return null
-    return toDemandAdjustment(forecast)
-  } catch {
-    return null
-  }
+  const forecast = await getForecastSafely(provider)
+  if (!forecast) return null
+  return toDemandAdjustment(forecast)
 }

@@ -119,6 +119,20 @@ export interface TankConfig {
   criticalThresholdPct: number
 }
 
+/**
+ * Where the farm sits. The weather provider reads this at request time
+ * instead of baking a city into the forecast URL.
+ */
+export interface FarmLocation {
+  latitude: number
+  longitude: number
+  /** Short place name shown to the farmer, e.g. "Kumasi, Ghana". */
+  label: string
+}
+
+/** Farmer-facing forecast condition. Matches the existing weather pictures. */
+export type WeatherCondition = 'clear' | 'rain' | 'hot-dry'
+
 export interface TankState {
   /** Simulated now; becomes `measured` once a real HC-SR04 reading feeds ESP32DeviceProvider. */
   levelL: Tagged<number>
@@ -177,6 +191,37 @@ export interface IrrigationActionResult {
 
 export type ShortageTier = 'low' | 'moderate' | 'high' | 'critical'
 
+/** One day in the weather forecast shown on Planning. */
+export interface WeatherDayForecast {
+  date: string
+  condition: WeatherCondition
+  temperatureMaxC: Tagged<number>
+  temperatureMinC: Tagged<number>
+  precipitationMm: Tagged<number>
+  precipitationProbabilityPct: Tagged<number>
+}
+
+/**
+ * Mapped Open-Meteo (or swapped provider) forecast. `available: false` is
+ * a normal outcome — planning still returns days remaining from tank and
+ * usage. Forecast numbers are tagged `forecast`.
+ */
+export interface WeatherForecastSnapshot {
+  available: boolean
+  reason?: string
+  asOf?: string
+  location?: FarmLocation
+  /** Which weather provider produced this snapshot. Swappable later. */
+  source?: string
+  condition?: WeatherCondition
+  temperatureC?: Tagged<number>
+  humidityPct?: Tagged<number>
+  precipitationMm?: Tagged<number>
+  precipitationProbabilityPct?: Tagged<number>
+  expectedRainfallMm?: Tagged<number>
+  days?: WeatherDayForecast[]
+}
+
 /**
  * Response shape for GET /api/planning. `daysRemaining` is tagged
  * `forecast` (it's a projection, not a measurement or even a direct
@@ -197,6 +242,7 @@ export interface PlanningSnapshot {
   weatherApplied: boolean
   /** How many simulated days of usage the 7-day average was computed over (0–7, may be fractional). */
   observedDays: number
+  weather: WeatherForecastSnapshot
 }
 
 export type HistoryRecordKind = 'irrigation-event' | 'farm-snapshot'
@@ -236,6 +282,8 @@ export interface HistorySnapshot {
 export interface SettingsSnapshot {
   tank: TankConfig
   tankDefaults: TankConfig
+  location: FarmLocation
+  locationDefaults: FarmLocation
   zones: IrrigationZone[]
   crops: CropProfile[]
 }
@@ -249,6 +297,7 @@ export interface SettingsActionResult {
   ok: boolean
   reason: string
   tank?: TankConfig
+  location?: FarmLocation
   zone?: IrrigationZoneConfig
 }
 
@@ -272,4 +321,4 @@ export interface TextToSpeechErrorResponse {
   reason: string
 }
 
-export const AQUAFLOW_SHARED_VERSION = '0.6.0'
+export const AQUAFLOW_SHARED_VERSION = '0.7.0'

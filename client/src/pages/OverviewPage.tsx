@@ -226,13 +226,18 @@ export function OverviewPage() {
           tone={rainTone}
           icon={<CloudSun className="h-4 w-4" />}
           label="Rain and weather"
+          badge={system ? <EstimateBadge tag={system.rain.isRaining.tag} /> : undefined}
           glance={
             weatherVisual ? (
               <VisualGlance
                 tone={rainTone}
                 illustration={<WeatherIllustration state={weatherVisual} />}
                 headline={weatherVisualHeadline(weatherVisual)}
-                detail={weatherVisualDetail(weatherVisual)}
+                detail={
+                  <>
+                    {weatherVisualDetail(weatherVisual)} Farm rain sensor — not the Planning forecast.
+                  </>
+                }
               />
             ) : undefined
           }

@@ -1,12 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { TANK_CONFIG } from './seedData.js'
 import {
+  applyFarmLocation,
   applyTankSettings,
+  getFarmLocation,
   getTankConfig,
   resetFarmSettingsForTests,
   restoreDefaultTankSettings,
   validateTankSettings,
 } from './farmSettings.js'
+import { FARM_LOCATION, TANK_CONFIG } from './seedData.js'
 
 describe('farmSettings', () => {
   afterEach(() => {
@@ -69,5 +71,27 @@ describe('farmSettings', () => {
     const restored = restoreDefaultTankSettings()
     expect(restored.ok).toBe(true)
     expect(getTankConfig()).toEqual(TANK_CONFIG)
+  })
+})
+
+describe('farm location', () => {
+  afterEach(() => {
+    resetFarmSettingsForTests()
+  })
+
+  it('starts from the seeded Ghana farm location', () => {
+    expect(getFarmLocation()).toEqual(FARM_LOCATION)
+  })
+
+  it('saves a new place and uses those coordinates', () => {
+    const result = applyFarmLocation({ latitude: 5.55, longitude: -0.2, label: 'Accra, Ghana' })
+    expect(result.ok).toBe(true)
+    expect(getFarmLocation()).toEqual({ latitude: 5.55, longitude: -0.2, label: 'Accra, Ghana' })
+  })
+
+  it('rejects a latitude outside -90 to 90 without changing the live location', () => {
+    const rejected = applyFarmLocation({ latitude: 200, longitude: 0, label: 'Nowhere' })
+    expect(rejected.ok).toBe(false)
+    expect(getFarmLocation()).toEqual(FARM_LOCATION)
   })
 })

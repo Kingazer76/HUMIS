@@ -36,6 +36,14 @@ export function formatLitersPerDay(value: number): string {
   return `${Math.round(value).toLocaleString()} L/day`
 }
 
+export function formatTemperatureC(value: number): string {
+  return `${Math.round(value)}°C`
+}
+
+export function formatMm(value: number): string {
+  return `${value.toFixed(1)} mm`
+}
+
 export function formatTierLabel(tier: string): string {
   return tier.toUpperCase()
 }

@@ -46,8 +46,8 @@ export function deriveTankVisualState(
 
 /**
  * Rain comes from the existing rain reading. `hot-dry` is only used when
- * a forecast actually says so — this app's mock weather is rain or clear,
- * so clear maps to normal. Never invents a hot-dry state from tank or soil.
+ * a forecast actually says so. Live farm rain (Overview / Irrigation) still
+ * uses the rain sensor; Planning uses the Open-Meteo forecast condition.
  */
 export function deriveWeatherVisualState(input: {
   isRaining: boolean
@@ -96,16 +96,28 @@ export function tankVisualDetail(state: TankVisualState): string {
   return 'There is enough stored water for normal watering.'
 }
 
-export function weatherVisualHeadline(state: WeatherVisualState): string {
-  if (state === 'rain') return 'Rain detected'
+export function weatherVisualHeadline(
+  state: WeatherVisualState,
+  mode: 'live' | 'forecast' = 'live',
+): string {
+  if (state === 'rain') return mode === 'forecast' ? 'Rain expected' : 'Rain detected'
   if (state === 'hot-dry') return 'Hot and dry'
-  return 'No rain'
+  return mode === 'forecast' ? 'No rain expected' : 'No rain'
 }
 
-export function weatherVisualDetail(state: WeatherVisualState): string {
-  if (state === 'rain') return 'Rain is falling. Watering still follows the stored water and the soil.'
+export function weatherVisualDetail(
+  state: WeatherVisualState,
+  mode: 'live' | 'forecast' = 'live',
+): string {
+  if (state === 'rain') {
+    return mode === 'forecast'
+      ? 'Rain is in the forecast. Watering still follows the stored water and the soil.'
+      : 'Rain is falling. Watering still follows the stored water and the soil.'
+  }
   if (state === 'hot-dry') return 'Dry weather — fields may need water sooner.'
-  return 'No rain right now. Watering still follows the stored water and the soil.'
+  return mode === 'forecast'
+    ? 'No rain is in the forecast. Watering still follows the stored water and the soil.'
+    : 'No rain right now. Watering still follows the stored water and the soil.'
 }
 
 export function irrigationVisualHeadline(state: IrrigationVisualState): string {

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Settings2, Sprout } from '@/lib/icons'
+import { Settings2, Sprout, MapPin } from '@/lib/icons'
 import type { SettingsSnapshot } from '@aquaflow/shared'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { SectionCard } from '@/components/shared/SectionCard'
 import { TankConfigForm } from '@/components/settings/TankConfigForm'
+import { FarmLocationForm } from '@/components/settings/FarmLocationForm'
 import { ZoneSettingsList } from '@/components/settings/ZoneSettingsList'
 import { api } from '@/lib/api'
 
@@ -78,6 +79,24 @@ export function SettingsPage() {
               {loading ? 'Loading the current tank numbers…' : error}
             </p>
           </>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        icon={<MapPin className="h-4 w-4" />}
+        title="Farm location"
+        description="Where this farm sits. The weather forecast uses these coordinates. Tank, soil, and rain-sensor numbers stay simulated."
+      >
+        {data ? (
+          <FarmLocationForm
+            key={`${data.location.latitude}-${data.location.longitude}-${data.location.label}`}
+            location={data.location}
+            onSaved={load}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {loading ? 'Loading the farm location…' : error}
+          </p>
         )}
       </SectionCard>
 

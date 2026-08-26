@@ -1,7 +1,9 @@
-import type { TankConfig } from '@aquaflow/shared'
-import { TANK_CONFIG as DEFAULT_TANK_CONFIG } from './seedData.js'
+import type { FarmLocation, TankConfig } from '@aquaflow/shared'
+import { readFarmLocationFromEnv } from '../env.js'
+import { FARM_LOCATION as DEFAULT_FARM_LOCATION, TANK_CONFIG as DEFAULT_TANK_CONFIG } from './seedData.js'
 
 let tankConfig: TankConfig = { ...DEFAULT_TANK_CONFIG }
+let farmLocation: FarmLocation = readFarmLocationFromEnv() ?? { ...DEFAULT_FARM_LOCATION }
 
 export function getTankConfig(): TankConfig {
   return { ...tankConfig }
@@ -9,6 +11,14 @@ export function getTankConfig(): TankConfig {
 
 export function getDefaultTankConfig(): TankConfig {
   return { ...DEFAULT_TANK_CONFIG }
+}
+
+export function getFarmLocation(): FarmLocation {
+  return { ...farmLocation }
+}
+
+export function getDefaultFarmLocation(): FarmLocation {
+  return { ...DEFAULT_FARM_LOCATION }
 }
 
 export type TankSettingsResult =
@@ -64,7 +74,62 @@ export function restoreDefaultTankSettings(): TankSettingsResult {
   return { ok: true, reason: 'Tank settings restored to the usual farm defaults.', config: getTankConfig() }
 }
 
+export type LocationSettingsResult =
+  | { ok: true; reason: string; location: FarmLocation }
+  | { ok: false; reason: string }
+
+/**
+ * Validates farm coordinates without writing them. The weather forecast
+ * uses whatever location is stored here.
+ */
+export function validateFarmLocation(input: {
+  latitude?: unknown
+  longitude?: unknown
+  label?: unknown
+}): LocationSettingsResult {
+  const latitude = Number(input.latitude)
+  const longitude = Number(input.longitude)
+  const label = typeof input.label === 'string' ? input.label.trim() : ''
+
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+    return { ok: false, reason: 'Latitude must be a number between -90 and 90.' }
+  }
+  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+    return { ok: false, reason: 'Longitude must be a number between -180 and 180.' }
+  }
+  if (label.length > 80) {
+    return { ok: false, reason: 'The place name must be 80 characters or fewer.' }
+  }
+
+  return {
+    ok: true,
+    reason: 'Farm location saved. The weather forecast will use this place.',
+    location: { latitude, longitude, label: label || 'Farm location' },
+  }
+}
+
+export function applyFarmLocation(input: {
+  latitude?: unknown
+  longitude?: unknown
+  label?: unknown
+}): LocationSettingsResult {
+  const result = validateFarmLocation(input)
+  if (!result.ok) return result
+  farmLocation = result.location
+  return result
+}
+
+export function restoreDefaultFarmLocation(): { ok: true; reason: string; location: FarmLocation } {
+  farmLocation = { ...DEFAULT_FARM_LOCATION }
+  return {
+    ok: true,
+    reason: 'Farm location restored to the usual farm default.',
+    location: getFarmLocation(),
+  }
+}
+
 /** Test isolation — the live farm config is process-wide, like the simulation. */
 export function resetFarmSettingsForTests(): void {
   tankConfig = { ...DEFAULT_TANK_CONFIG }
+  farmLocation = { ...DEFAULT_FARM_LOCATION }
 }

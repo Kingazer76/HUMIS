@@ -248,5 +248,6 @@ export function predictShortage(input: ShortagePredictionInput): PlanningSnapsho
     adjustedDailyConsumptionL: flowReading(adjustedDailyConsumptionL),
     weatherApplied,
     observedDays,
+    weather: { available: false },
   }
 }

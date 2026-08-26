@@ -91,6 +91,11 @@ describe('deriveShortageVisualState', () => {
 })
 
 describe('farmer-facing headlines', () => {
+  it('uses forecast wording when the mode is forecast', () => {
+    expect(weatherVisualHeadline('rain', 'forecast')).toBe('Rain expected')
+    expect(weatherVisualHeadline('normal', 'forecast')).toBe('No rain expected')
+  })
+
   it('uses plain watering and water-level wording', () => {
     expect(soilVisualHeadline('irrigating')).toBe('Watering now')
     expect(soilVisualHeadline('dry')).toBe('Soil is dry')

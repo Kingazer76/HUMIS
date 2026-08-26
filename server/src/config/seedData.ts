@@ -1,5 +1,6 @@
 import type {
   CropProfile,
+  FarmLocation,
   IrrigationZoneConfig,
   TankConfig,
   WaterSourceConfig,
@@ -15,6 +16,16 @@ export const TANK_CONFIG: TankConfig = {
   capacityL: 15000,
   lowThresholdPct: 25,
   criticalThresholdPct: 15,
+}
+
+/**
+ * Default farm place used by the weather forecast. Settings can change
+ * this; the Open-Meteo client never bakes in its own city.
+ */
+export const FARM_LOCATION: FarmLocation = {
+  latitude: 6.6885,
+  longitude: -1.6244,
+  label: 'Kumasi, Ghana',
 }
 
 export const INITIAL_TANK_LEVEL_L = 9700

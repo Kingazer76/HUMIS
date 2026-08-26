@@ -83,10 +83,27 @@ export function answerQuestion(topic: string, farm: FarmState): string {
 
   if (topic === 'weather') {
     const raining = system.rain.isRaining.value
-    if (raining) {
-      return `Rain detected (${tagLabel(system.rain.isRaining.tag)}). Watering still follows the stored water and the soil.`
+    const sensorLine = raining
+      ? `Farm rain sensor: rain detected (${tagLabel(system.rain.isRaining.tag)}).`
+      : `Farm rain sensor: no rain right now (${tagLabel(system.rain.isRaining.tag)}).`
+    const forecast = planning.weather
+    if (forecast.available && forecast.condition) {
+      const temp =
+        forecast.temperatureC !== undefined ? ` ${Math.round(forecast.temperatureC.value)}°C.` : ''
+      const chance =
+        forecast.precipitationProbabilityPct !== undefined
+          ? ` Rain chance ${Math.round(forecast.precipitationProbabilityPct.value)}% (${tagLabel(forecast.precipitationProbabilityPct.tag)}).`
+          : ''
+      const place = forecast.location?.label ? ` for ${forecast.location.label}` : ''
+      const cond =
+        forecast.condition === 'rain'
+          ? `Rain is in the forecast${place}.`
+          : forecast.condition === 'hot-dry'
+            ? `The forecast${place} is hot and dry.`
+            : `The forecast${place} does not show rain.`
+      return `${cond}${temp}${chance} ${sensorLine} Watering still follows the stored water and the soil.`
     }
-    return `No rain right now (${tagLabel(system.rain.isRaining.tag)}). Watering still follows the stored water and the soil.`
+    return `${sensorLine} ${forecast.reason ?? 'Weather forecast is not available.'} Watering still follows the stored water and the soil.`
   }
 
   if (topic === 'irrigation') {

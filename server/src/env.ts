@@ -83,3 +83,19 @@ export const KHAYA_TTS_URL = process.env.KHAYA_TTS_URL ?? ''
 
 /** Optional Khaya voice: male_low, male_high, or female. Empty uses Khaya's default. */
 export const KHAYA_TTS_SPEAKER = process.env.KHAYA_TTS_SPEAKER ?? ''
+
+/**
+ * Optional farm coordinates for the weather forecast. Not a secret.
+ * When unset, AquaFlow uses the farm location in Settings (seeded as
+ * Kumasi, Ghana). The Open-Meteo client reads whatever location is
+ * configured — it does not bake in its own city.
+ */
+export function readFarmLocationFromEnv(): { latitude: number; longitude: number; label: string } | undefined {
+  loadLocalEnvFile()
+  const latitude = Number(process.env.FARM_LATITUDE)
+  const longitude = Number(process.env.FARM_LONGITUDE)
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return undefined
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return undefined
+  const label = (process.env.FARM_LOCATION_LABEL ?? '').trim()
+  return { latitude, longitude, label: label || 'Farm location' }
+}

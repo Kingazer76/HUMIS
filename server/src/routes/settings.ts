@@ -1,9 +1,13 @@
 import type { SettingsActionResult, SettingsSnapshot } from '@aquaflow/shared'
 import { Router } from 'express'
 import {
+  applyFarmLocation,
   applyTankSettings,
+  getDefaultFarmLocation,
   getDefaultTankConfig,
+  getFarmLocation,
   getTankConfig,
+  restoreDefaultFarmLocation,
   restoreDefaultTankSettings,
 } from '../config/farmSettings.js'
 import { applyZoneSettingsPatch } from '../config/zoneSettings.js'
@@ -23,6 +27,8 @@ settingsRouter.get('/', async (_req, res, next) => {
     const snapshot: SettingsSnapshot = {
       tank: getTankConfig(),
       tankDefaults: getDefaultTankConfig(),
+      location: getFarmLocation(),
+      locationDefaults: getDefaultFarmLocation(),
       zones,
       crops: CROP_PROFILES.map((c) => ({ ...c })),
     }
@@ -69,6 +75,27 @@ settingsRouter.post('/tank/defaults', (_req, res) => {
     return
   }
   res.json({ ok: false, reason: result.reason } satisfies SettingsActionResult)
+})
+
+settingsRouter.put('/location', (req, res) => {
+  const result = applyFarmLocation({
+    latitude: req.body?.latitude,
+    longitude: req.body?.longitude,
+    label: req.body?.label,
+  })
+  if (result.ok) {
+    const payload: SettingsActionResult = { ok: true, reason: result.reason, location: result.location }
+    res.json(payload)
+    return
+  }
+  const payload: SettingsActionResult = { ok: false, reason: result.reason }
+  res.json(payload)
+})
+
+settingsRouter.post('/location/defaults', (_req, res) => {
+  const result = restoreDefaultFarmLocation()
+  const payload: SettingsActionResult = { ok: true, reason: result.reason, location: result.location }
+  res.json(payload)
 })
 
 settingsRouter.put('/zones/:id', async (req, res, next) => {
