@@ -252,4 +252,11 @@ export interface SettingsActionResult {
   zone?: IrrigationZoneConfig
 }
 
+/** Response shape for POST /api/assistant/chat. */
+export interface AssistantChatResponse {
+  reply: string
+  /** Present when the message asked to start/stop watering or the pump. */
+  action?: IrrigationActionResult
+}
+
 export const AQUAFLOW_SHARED_VERSION = '0.6.0'

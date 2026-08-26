@@ -57,7 +57,7 @@ async function syncPumpToZones(): Promise<void> {
 /**
  * The only module allowed to call `deviceProvider.setPumpState()` /
  * `setZoneValve()`. Every caller — the manual "Water now"/"Stop" buttons,
- * the automatic hysteresis loop, and (in a later phase) the AI assistant —
+ * the automatic hysteresis loop, and the AquaFlow Assistant —
  * goes through here and is subject to the exact same safety interlocks.
  */
 export const safetyController = {

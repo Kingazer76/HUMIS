@@ -1,5 +1,6 @@
 import cors from 'cors'
 import express, { type Express } from 'express'
+import { assistantRouter } from './routes/assistant.js'
 import { historyRouter } from './routes/history.js'
 import { irrigationRouter } from './routes/irrigation.js'
 import { planningRouter } from './routes/planning.js'
@@ -31,6 +32,7 @@ export function createApp(): Express {
   app.use('/api/planning', planningRouter)
   app.use('/api/history', historyRouter)
   app.use('/api/settings', settingsRouter)
+  app.use('/api/assistant', assistantRouter)
 
   return app
 }

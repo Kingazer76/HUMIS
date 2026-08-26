@@ -11,7 +11,7 @@ import type {
 import { type DeviceProvider, NotImplementedError } from './deviceProvider.js'
 
 /**
- * Stub only — real ESP32 hardware integration is Phase 7, explicitly
+ * Stub only — real ESP32 hardware integration is Phase 9, explicitly
  * deferred. This class exists so the provider-selection seam
  * (`providers/index.ts`) is already wired end-to-end; every method throws
  * until that phase is explicitly requested. Do not implement hardware

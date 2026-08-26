@@ -1,7 +1,7 @@
 /**
  * Centralized env var reads. `USE_SIMULATED` stays `true` for the whole
  * build until real ESP32 hardware integration is explicitly requested
- * (Phase 7) — nothing else in the codebase should read `process.env`
+ * (Phase 9) — nothing else in the codebase should read `process.env`
  * directly for this flag.
  */
 export const USE_SIMULATED = (process.env.USE_SIMULATED ?? 'true') !== 'false'

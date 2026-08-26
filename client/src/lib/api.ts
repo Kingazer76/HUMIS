@@ -1,4 +1,5 @@
 import type {
+  AssistantChatResponse,
   HistorySnapshot,
   IrrigationActionResult,
   IrrigationZone,
@@ -80,4 +81,6 @@ export const api = {
   setPumpState: (isOn: boolean) => postJson<IrrigationActionResult>('/api/irrigation/pump', { isOn }),
   setOperationMode: (mode: OperationMode) =>
     postJson<IrrigationActionResult>('/api/irrigation/mode', { mode }),
+  sendAssistantMessage: (message: string) =>
+    postJson<AssistantChatResponse>('/api/assistant/chat', { message }),
 }

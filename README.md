@@ -16,9 +16,10 @@ V3 combines:
   `DeviceProvider`, so a simulated farm today can become a real ESP32-driven farm later
   without a redesign.
 
-This repository is being built in staged phases. **Phases 0–6 are complete.**
+This repository is being built in staged phases. **Phases 0–7 are complete.**
 Settings writes live farm numbers. Overview leads with water, crops, weather, shortage,
-days remaining, and watering status, with healthy / warning / critical colors on those cards.
+days remaining, and watering status. The AquaFlow Assistant in the header can answer
+farm questions and start or stop watering through the same safety gate as the Irrigation tab.
 
 ## Why a flow-sensor disclaimer matters
 
@@ -92,7 +93,8 @@ shortage result from tank level and usage.
 - [x] **Phase 6** — Visual redesign: mint page, deep teal actions, outlined tabs, clearer
       cards and badges. Gold is a navigation accent (tab outlines and a small diamond
       mark). It is not used as a warning color. Full Adinkra patterning is not in this phase.
-- [ ] **Phase 7** — AquaFlow Assistant (text chat), actions routed through the safety controller.
+- [x] **Phase 7** — AquaFlow Assistant (text chat). Questions use existing farm data.
+      Watering commands go through `safetyController` only — never a second control path.
 - [ ] **Phase 8** — Khaya-backed speech recognition, translation, and text-to-speech.
 - [ ] **Phase 9 (deferred)** — real ESP32 hardware integration. Not started; `USE_SIMULATED`
       stays `true` until this is explicitly requested.

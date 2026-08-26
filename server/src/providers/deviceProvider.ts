@@ -12,7 +12,7 @@ import type {
 /**
  * Everything the rest of AquaFlow knows about "the farm's hardware" goes
  * through this interface. `SimulatedDeviceProvider` (Phase 1) and
- * `ESP32DeviceProvider` (stub now, real in a future Phase 7) both implement
+ * `ESP32DeviceProvider` (stub now, real in Phase 9) both implement
  * it, so nothing above this layer needs to know which one is active.
  *
  * IMPORTANT: this interface only ever *reports* state and *requests*

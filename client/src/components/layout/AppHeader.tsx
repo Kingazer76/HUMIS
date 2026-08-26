@@ -1,9 +1,9 @@
-import { Droplets, MessageCircle } from '@/lib/icons'
-import { Button } from '@/components/ui/button'
+import { Droplets } from '@/lib/icons'
+import { AssistantChat } from '@/components/assistant/AssistantChat'
 
 /**
- * App header: droplet mark, AquaFlow AI wordmark, and tagline.
- * The assistant button stays disabled until a later phase wires it up.
+ * App header: droplet mark, AquaFlow AI wordmark, tagline, and the
+ * AquaFlow Assistant chat button.
  */
 export function AppHeader() {
   return (
@@ -20,17 +20,7 @@ export function AppHeader() {
         </div>
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        disabled
-        title="AquaFlow Assistant — coming soon"
-        aria-label="Open AquaFlow Assistant (coming soon)"
-        className="rounded-full border-2"
-      >
-        <MessageCircle className="h-4 w-4" aria-hidden="true" />
-      </Button>
+      <AssistantChat />
     </header>
   )
 }
