@@ -9,6 +9,8 @@ import { TankConfigForm } from '@/components/settings/TankConfigForm'
 import { ZoneSettingsList } from '@/components/settings/ZoneSettingsList'
 import { api } from '@/lib/api'
 
+let settingsCache: SettingsSnapshot | undefined
+
 /**
  * V1's Settings tab: main-tank capacity/thresholds and per-zone config.
  * Saving writes the live farm settings (kept in memory while the server
@@ -16,12 +18,13 @@ import { api } from '@/lib/api'
  * up on their next refresh.
  */
 export function SettingsPage() {
-  const [data, setData] = useState<SettingsSnapshot>()
+  const [data, setData] = useState<SettingsSnapshot | undefined>(settingsCache)
   const [error, setError] = useState<string>()
 
   const load = useCallback(async () => {
     try {
       const snapshot = await api.getSettings()
+      settingsCache = snapshot
       setData(snapshot)
       setError(undefined)
     } catch {
@@ -30,6 +33,7 @@ export function SettingsPage() {
   }, [])
 
   useEffect(() => {
+    if (settingsCache) return
     void load()
   }, [load])
 
