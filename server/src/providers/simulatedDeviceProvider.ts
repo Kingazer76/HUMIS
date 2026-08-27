@@ -96,6 +96,8 @@ export class SimulatedDeviceProvider implements DeviceProvider {
   private operationMode: OperationMode = 'auto'
   private isRaining = false
   private rainTicksRemaining = 0
+  /** When true, tests have locked rain on/off — do not start random showers. */
+  private rainLockedForTests = false
 
   private cumulativeInflowL = 0
   private cumulativeUsedL = 0
@@ -181,6 +183,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
   }
 
   private advanceRain(): void {
+    if (this.rainLockedForTests) return
     if (this.isRaining) {
       this.rainTicksRemaining -= 1
       if (this.rainTicksRemaining <= 0) this.isRaining = false
@@ -282,6 +285,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
     this.operationMode = 'auto'
     this.isRaining = false
     this.rainTicksRemaining = 0
+    this.rainLockedForTests = false
     this.cumulativeInflowL = 0
     this.cumulativeUsedL = 0
     this.simulatedMinutesElapsed = 0
@@ -387,6 +391,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
   setRainForTests(isRaining: boolean): void {
     this.isRaining = isRaining
     this.rainTicksRemaining = isRaining ? 10_000 : 0
+    this.rainLockedForTests = true
   }
 
   /** Test isolation — set stored main-tank litres, clamped to live capacity. */

@@ -28,8 +28,9 @@ function clamp(value: number, min: number, max: number): number {
  * a flow number from tank-level delta — the caller supplies rates that
  * were already computed from configured rate x duration.
  *
- * Rainwater is an inflow into the main tank, not a stored reserve, so
- * sources with `hasOwnStorage: false` are left out of transferable totals.
+ * Available Water is the main tank only. External source reserves (well,
+ * pond, manual) stay in `transferableSourceL` for the Water tab and are
+ * not added in. Rainwater has no own reserve (`hasOwnStorage: false`).
  */
 export function buildWaterSnapshot(input: WaterAccountingInput): WaterSnapshot {
   const asOf = new Date().toISOString()
@@ -38,7 +39,7 @@ export function buildWaterSnapshot(input: WaterAccountingInput): WaterSnapshot {
     if (!s.hasOwnStorage) return sum
     return sum + s.state.currentL.value
   }, 0)
-  const totalAvailableL = mainTankL + transferableSourceL
+  const totalAvailableL = mainTankL
 
   return {
     tank: { ...input.tankConfig, state: input.tank },

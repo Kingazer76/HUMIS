@@ -179,7 +179,9 @@ export interface SystemStatusReading {
 export interface WaterSnapshot {
   tank: TankConfig & { state: TankState }
   mainTankL: Tagged<number>
+  /** Own-storage source reserves. Shown on the Water tab. Not part of Available Water. */
   transferableSourceL: Tagged<number>
+  /** Currently available stored water — the main tank only, clamped to capacity. */
   totalAvailableL: Tagged<number>
   waterInLPerMin: Tagged<number>
   waterUsedLPerMin: Tagged<number>

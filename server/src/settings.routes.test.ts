@@ -71,6 +71,7 @@ describe('GET/PUT /api/settings', () => {
     const water = await request(app).get('/api/water')
     expect(water.body.tank.capacityL).toBe(5000)
     expect(water.body.mainTankL.value).toBeLessThanOrEqual(5000)
+    expect(water.body.totalAvailableL.value).toBe(water.body.mainTankL.value)
 
     const after = await request(app).get('/api/planning')
     expect(after.body.daysRemaining.value).toBeLessThan(beforeDays)

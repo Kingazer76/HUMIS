@@ -61,7 +61,7 @@ export function answerQuestion(topic: string, farm: FarmState): string {
   }
 
   if (topic === 'tank') {
-    return `${tankLine}\nAvailable water (main tank plus other stored sources; rain fills the main tank): ${liters(water.totalAvailableL.value)} (${tagLabel(water.totalAvailableL.tag)}).`
+    return `${tankLine}\nAvailable water (main tank only): ${liters(water.totalAvailableL.value)} (${tagLabel(water.totalAvailableL.tag)}).`
   }
 
   if (topic === 'days') {

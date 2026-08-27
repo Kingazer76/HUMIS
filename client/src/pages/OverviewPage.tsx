@@ -265,7 +265,7 @@ export function OverviewPage() {
           label="Available water"
           badge={water ? <EstimateBadge tag="simulated" /> : undefined}
           value={water ? formatLiters(water.totalAvailableL.value) : undefined}
-          hint="Main tank plus other stored sources. Rain fills the main tank, not a separate tank."
+          hint="Water currently stored in the main tank"
         />
         <SectionCard
           tone={alertTone}

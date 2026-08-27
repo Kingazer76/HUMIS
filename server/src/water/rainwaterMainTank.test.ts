@@ -59,6 +59,7 @@ describe('rainwater feeds the main tank only', () => {
     const water = await snapshot()
     expect(water.mainTankL.value).toBe(20)
     expect(water.tank.capacityL).toBe(20)
+    expect(water.totalAvailableL.value).toBe(20)
   })
 
   it('does not count rainwater as a separate stored reserve', async () => {
@@ -72,8 +73,8 @@ describe('rainwater feeds the main tank only', () => {
 
     const water = await snapshot()
     expect(water.transferableSourceL.value).toBe(6100 + 4100 + 1000)
-    expect(water.totalAvailableL.value).toBe(water.mainTankL.value + water.transferableSourceL.value)
-    expect(water.totalAvailableL.value).not.toBe(water.mainTankL.value + rain.state.currentL.value)
+    expect(water.totalAvailableL.value).toBe(water.mainTankL.value)
+    expect(water.totalAvailableL.value).not.toBe(water.mainTankL.value + water.transferableSourceL.value)
   })
 
   it('keeps existing flow-input tagging as configured-rate', () => {

@@ -55,10 +55,10 @@ describe('buildWaterSnapshot', () => {
     expect(snapshot.mainTankL.value).toBeGreaterThanOrEqual(0)
   })
 
-  it('total available water equals main tank plus own-storage sources, regardless of active flag', () => {
+  it('available water equals the main tank only, not external source reserves', () => {
     const sources = [source('a', 1000, true), source('b', 2500, false)]
     const snapshot = buildWaterSnapshot({
-      tank: tankState(9000),
+      tank: tankState(5500),
       tankConfig,
       sources,
       waterInLPerMin: 0,
@@ -67,32 +67,50 @@ describe('buildWaterSnapshot', () => {
       usedSinceStartL: 0,
       flowInputSource: 'configured-rate',
     })
+    expect(snapshot.mainTankL.value).toBe(5500)
     expect(snapshot.transferableSourceL.value).toBe(3500)
-    expect(snapshot.totalAvailableL.value).toBe(9000 + 3500)
+    expect(snapshot.totalAvailableL.value).toBe(5500)
   })
 
-  it('does not count rainwater as a separate stored reserve', () => {
+  it('does not count rainwater or other sources as available water', () => {
     const sources = [
-      source('rainwater-harvesting', 2900, true, {
+      source('rainwater-harvesting', 1000, true, {
         kind: 'rainwater',
         hasOwnStorage: false,
         capacityL: 0,
       }),
-      source('well-borehole', 6100, true),
+      source('well-borehole', 3000, true),
+      source('reservoir-pond', 2000, false, { kind: 'reservoir' }),
     ]
     const snapshot = buildWaterSnapshot({
-      tank: tankState(18),
-      tankConfig: { ...tankConfig, capacityL: 20 },
+      tank: tankState(5500),
+      tankConfig,
       sources,
-      waterInLPerMin: 2.5,
+      waterInLPerMin: 0,
       waterUsedLPerMin: 0,
       inflowSinceStartL: 0,
       usedSinceStartL: 0,
       flowInputSource: 'configured-rate',
     })
-    expect(snapshot.mainTankL.value).toBe(18)
-    expect(snapshot.transferableSourceL.value).toBe(6100)
-    expect(snapshot.totalAvailableL.value).toBe(18 + 6100)
+    expect(snapshot.mainTankL.value).toBe(5500)
+    expect(snapshot.transferableSourceL.value).toBe(5000)
+    expect(snapshot.totalAvailableL.value).toBe(5500)
+  })
+
+  it('clamps available water to the configured main-tank capacity', () => {
+    const snapshot = buildWaterSnapshot({
+      tank: tankState(9700),
+      tankConfig: { ...tankConfig, capacityL: 20 },
+      sources: [source('well-borehole', 10000, true)],
+      waterInLPerMin: 0,
+      waterUsedLPerMin: 0,
+      inflowSinceStartL: 0,
+      usedSinceStartL: 0,
+      flowInputSource: 'configured-rate',
+    })
+    expect(snapshot.mainTankL.value).toBe(20)
+    expect(snapshot.totalAvailableL.value).toBe(20)
+    expect(snapshot.transferableSourceL.value).toBe(10000)
   })
 
   it('tags Water In / Water Used / totals as estimated with the given flow input source, never as measured', () => {
@@ -130,5 +148,71 @@ describe('buildWaterSnapshot', () => {
       flowInputSource: 'configured-rate',
     })
     expect(snapshot.mainTankL.tag).toBe('simulated')
+  })
+
+  it('case 1: 5,500 L in the tank and 5,000 L in external sources → available is 5,500 L', () => {
+    const snapshot = buildWaterSnapshot({
+      tank: tankState(5500),
+      tankConfig,
+      sources: [source('well', 3000), source('pond', 2000, false, { kind: 'reservoir' })],
+      waterInLPerMin: 0,
+      waterUsedLPerMin: 0,
+      inflowSinceStartL: 0,
+      usedSinceStartL: 0,
+      flowInputSource: 'configured-rate',
+    })
+    expect(snapshot.totalAvailableL.value).toBe(5500)
+  })
+
+  it('case 2: 20 L tank at 20 L with 10,000 L in external sources → available is 20 L', () => {
+    const snapshot = buildWaterSnapshot({
+      tank: tankState(20),
+      tankConfig: { ...tankConfig, capacityL: 20 },
+      sources: [source('well', 10000)],
+      waterInLPerMin: 0,
+      waterUsedLPerMin: 0,
+      inflowSinceStartL: 0,
+      usedSinceStartL: 0,
+      flowInputSource: 'configured-rate',
+    })
+    expect(snapshot.totalAvailableL.value).toBe(20)
+    expect(snapshot.mainTankL.value).toBe(20)
+  })
+
+  it('case 4: 5,500 L in the tank and no incoming water → available is 5,500 L', () => {
+    const snapshot = buildWaterSnapshot({
+      tank: tankState(5500),
+      tankConfig,
+      sources: [],
+      waterInLPerMin: 0,
+      waterUsedLPerMin: 0,
+      inflowSinceStartL: 0,
+      usedSinceStartL: 0,
+      flowInputSource: 'configured-rate',
+    })
+    expect(snapshot.totalAvailableL.value).toBe(5500)
+  })
+
+  it('case 5: 5,500 L tank, well 3,000, pond 2,000, rain potential 1,000 → available is 5,500 L', () => {
+    const snapshot = buildWaterSnapshot({
+      tank: tankState(5500),
+      tankConfig,
+      sources: [
+        source('rainwater-harvesting', 1000, true, {
+          kind: 'rainwater',
+          hasOwnStorage: false,
+          capacityL: 0,
+        }),
+        source('well-borehole', 3000),
+        source('reservoir-pond', 2000, false, { kind: 'reservoir' }),
+      ],
+      waterInLPerMin: 0,
+      waterUsedLPerMin: 0,
+      inflowSinceStartL: 0,
+      usedSinceStartL: 0,
+      flowInputSource: 'configured-rate',
+    })
+    expect(snapshot.transferableSourceL.value).toBe(5000)
+    expect(snapshot.totalAvailableL.value).toBe(5500)
   })
 })
