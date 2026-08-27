@@ -61,11 +61,19 @@ function MonitoringRow({ icon, label, value }: { icon: ReactNode; label: string;
   )
 }
 
-function SourceRow({ source, isRaining }: { source: WaterSource; isRaining: boolean | undefined }) {
+function SourceRow({
+  source,
+  isRaining,
+  tankFull,
+}: {
+  source: WaterSource
+  isRaining: boolean | undefined
+  tankFull: boolean
+}) {
   if (!source.hasOwnStorage) {
     const rainRate = source.state.lastInflowLPerMin?.value ?? 0
     const contributing = Boolean(isRaining) && rainRate > 0
-    const tankFull = Boolean(isRaining) && rainRate <= 0
+    const overflow = Boolean(isRaining) && tankFull
     return (
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2 text-sm">
@@ -74,16 +82,24 @@ function SourceRow({ source, isRaining }: { source: WaterSource; isRaining: bool
             {source.name}
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            {contributing ? formatRate(rainRate) : isRaining ? 'Overflow' : '0.0 L/min'}
+            {contributing
+              ? formatRate(rainRate)
+              : overflow
+                ? 'Overflow'
+                : isRaining
+                  ? formatRate(source.nominalTransferRateLPerMin)
+                  : '0.0 L/min'}
             <EstimateBadge tag={source.state.lastInflowLPerMin?.tag ?? 'estimated'} />
           </span>
         </div>
         <p className="text-[11px] text-muted-foreground/70">
           {contributing
             ? 'Rain is adding water to the main tank.'
-            : tankFull
+            : overflow
               ? 'Rain detected. The main tank is full, so extra rain is overflow and is not stored.'
-              : 'No rain right now. Rain fills the main tank — it has no tank of its own.'}
+              : isRaining
+                ? 'Rain detected. Rain is being added to the main tank.'
+                : 'No rain right now. Rain fills the main tank — it has no tank of its own.'}
         </p>
       </div>
     )
@@ -130,6 +146,7 @@ export function WaterPage() {
   const raining = system?.rain.isRaining.value
   const rainSource = sources?.find((source) => source.kind === 'rainwater')
   const rainInRate = rainSource?.state.lastInflowLPerMin?.value
+  const tankFull = water ? water.mainTankL.value >= water.tank.capacityL - 1e-9 : false
 
   return (
     <div className="flex flex-col gap-5">
@@ -234,7 +251,12 @@ export function WaterPage() {
         >
           <div className="flex flex-col gap-5">
             {sources?.map((source) => (
-              <SourceRow key={source.id} source={source} isRaining={raining} />
+              <SourceRow
+                key={source.id}
+                source={source}
+                isRaining={raining}
+                tankFull={tankFull}
+              />
             )) ?? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
           </div>
         </SectionCard>
