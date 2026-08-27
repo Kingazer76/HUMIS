@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ArrowDown, ArrowUp, Database, Droplets, Gauge, Plus } from '@/lib/icons'
+import { ArrowDown, ArrowUp, CloudRain, Database, Droplets, Gauge, Plus, Sprout } from '@/lib/icons'
 import type { DataTag, WaterSource } from '@aquaflow/shared'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -61,7 +61,34 @@ function MonitoringRow({ icon, label, value }: { icon: ReactNode; label: string;
   )
 }
 
-function SourceRow({ source }: { source: WaterSource }) {
+function SourceRow({ source, isRaining }: { source: WaterSource; isRaining: boolean | undefined }) {
+  if (!source.hasOwnStorage) {
+    const rainRate = source.state.lastInflowLPerMin?.value ?? 0
+    const contributing = Boolean(isRaining) && rainRate > 0
+    const tankFull = Boolean(isRaining) && rainRate <= 0
+    return (
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-2 text-sm">
+          <span className="flex items-center gap-2 font-medium text-foreground">
+            <CloudRain className="h-4 w-4 text-primary" />
+            {source.name}
+          </span>
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            {contributing ? formatRate(rainRate) : isRaining ? 'Overflow' : '0.0 L/min'}
+            <EstimateBadge tag={source.state.lastInflowLPerMin?.tag ?? 'estimated'} />
+          </span>
+        </div>
+        <p className="text-[11px] text-muted-foreground/70">
+          {contributing
+            ? 'Rain is adding water to the main tank.'
+            : tankFull
+              ? 'Rain detected. The main tank is full, so extra rain is overflow and is not stored.'
+              : 'No rain right now. Rain fills the main tank — it has no tank of its own.'}
+        </p>
+      </div>
+    )
+  }
+
   const pct = Math.round((source.state.currentL.value / source.capacityL) * 100)
   return (
     <div className="flex flex-col gap-1.5">
@@ -85,46 +112,71 @@ function SourceRow({ source }: { source: WaterSource }) {
 
 /**
  * V1's Water tab, now wired to Phase 1's simulated data layer. Water In and
- * Water Used are always shown with an "estimated" tag (there is no flow
- * sensor); Stored/tank fill is "simulated" today and becomes "measured"
- * only once a real tank sensor exists.
+ * Water Used are always shown with an "estimated" tag (there is no extra
+ * flow sensor for rain); Stored/tank fill is "simulated" today and becomes
+ * "measured" only once a real tank sensor exists. Rainwater is an inflow
+ * into the main tank, not a second stored tank.
  */
 export function WaterPage() {
   const { data: water } = usePolling(api.getWater)
   const { data: sources } = usePolling(api.getSources)
+  const { data: system } = usePolling(api.getSystem)
 
   const fillPct = water ? (water.mainTankL.value / water.tank.capacityL) * 100 : undefined
   const tankVisual =
     fillPct !== undefined && water
       ? deriveTankVisualState(fillPct, water.tank.lowThresholdPct, water.tank.criticalThresholdPct)
       : undefined
+  const raining = system?.rain.isRaining.value
+  const rainSource = sources?.find((source) => source.kind === 'rainwater')
+  const rainInRate = rainSource?.state.lastInflowLPerMin?.value
 
   return (
     <div className="flex flex-col gap-5">
       <SectionCard
         icon={<Droplets className="h-4 w-4" />}
-        title="Water flow — in → stored → used"
-        description="Water in and water used are always estimated; no flow sensor is installed."
+        title="Rain → water in → main tank → water used → irrigation"
+        description="Rain adds estimated water to the main tank. Extra rain overflows when the tank is full. Water in and water used stay estimated from the existing flow path — no new sensors."
       >
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <FlowStep
+            icon={<CloudRain className="h-4 w-4" />}
+            label="Rain"
+            hint="farm rain sensor"
+            value={
+              raining === undefined ? undefined : raining ? 'Rain detected' : 'No rain'
+            }
+            tag={system?.rain.isRaining.tag}
+          />
           <FlowStep
             icon={<ArrowDown className="h-4 w-4" />}
             label="Water in"
-            hint="entering storage"
+            hint={
+              raining && (rainInRate ?? 0) > 0
+                ? 'includes rain into the main tank'
+                : 'entering the main tank'
+            }
             value={water ? formatRate(water.waterInLPerMin.value) : undefined}
             tag={water?.waterInLPerMin.tag}
           />
           <FlowStep
             icon={<Database className="h-4 w-4" />}
-            label="Stored"
-            hint="in the storage tank"
+            label="Main tank"
+            hint="stored water"
             value={water ? formatLiters(water.mainTankL.value) : undefined}
             tag={water?.mainTankL.tag}
           />
           <FlowStep
             icon={<ArrowUp className="h-4 w-4" />}
             label="Water used"
-            hint="through watering"
+            hint="leaving the main tank"
+            value={water ? formatRate(water.waterUsedLPerMin.value) : undefined}
+            tag={water?.waterUsedLPerMin.tag}
+          />
+          <FlowStep
+            icon={<Sprout className="h-4 w-4" />}
+            label="Irrigation"
+            hint="watering the fields"
             value={water ? formatRate(water.waterUsedLPerMin.value) : undefined}
             tag={water?.waterUsedLPerMin.tag}
           />
@@ -181,8 +233,9 @@ export function WaterPage() {
           }
         >
           <div className="flex flex-col gap-5">
-            {sources?.map((source) => <SourceRow key={source.id} source={source} />) ??
-              Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
+            {sources?.map((source) => (
+              <SourceRow key={source.id} source={source} isRaining={raining} />
+            )) ?? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
           </div>
         </SectionCard>
       </div>

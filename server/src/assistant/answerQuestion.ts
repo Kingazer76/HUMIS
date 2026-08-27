@@ -61,7 +61,7 @@ export function answerQuestion(topic: string, farm: FarmState): string {
   }
 
   if (topic === 'tank') {
-    return `${tankLine}\nAvailable water (tank plus other sources): ${liters(water.totalAvailableL.value)} (${tagLabel(water.totalAvailableL.tag)}).`
+    return `${tankLine}\nAvailable water (main tank plus other stored sources; rain fills the main tank): ${liters(water.totalAvailableL.value)} (${tagLabel(water.totalAvailableL.tag)}).`
   }
 
   if (topic === 'days') {
@@ -84,7 +84,7 @@ export function answerQuestion(topic: string, farm: FarmState): string {
   if (topic === 'weather') {
     const raining = system.rain.isRaining.value
     const sensorLine = raining
-      ? `Farm rain sensor: rain detected (${tagLabel(system.rain.isRaining.tag)}).`
+      ? `Farm rain sensor: rain detected (${tagLabel(system.rain.isRaining.tag)}). Calculated rainwater is being added to the main tank, not to a separate rain tank.`
       : `Farm rain sensor: no rain right now (${tagLabel(system.rain.isRaining.tag)}).`
     const forecast = planning.weather
     if (forecast.available && forecast.condition) {

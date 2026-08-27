@@ -8,14 +8,21 @@ function tankState(levelL: number): TankState {
   return { levelL: { value: levelL, tag: 'simulated', asOf: new Date().toISOString() } }
 }
 
-function source(id: string, currentL: number, active = true): WaterSource {
+function source(
+  id: string,
+  currentL: number,
+  active = true,
+  extras: Partial<WaterSource> = {},
+): WaterSource {
   return {
     id,
     name: id,
     kind: 'well',
     capacityL: 10000,
+    hasOwnStorage: true,
     nominalTransferRateLPerMin: 1,
     state: { id, currentL: { value: currentL, tag: 'simulated', asOf: new Date().toISOString() }, active },
+    ...extras,
   }
 }
 
@@ -48,7 +55,7 @@ describe('buildWaterSnapshot', () => {
     expect(snapshot.mainTankL.value).toBeGreaterThanOrEqual(0)
   })
 
-  it('total available water equals main tank plus every source, regardless of active flag', () => {
+  it('total available water equals main tank plus own-storage sources, regardless of active flag', () => {
     const sources = [source('a', 1000, true), source('b', 2500, false)]
     const snapshot = buildWaterSnapshot({
       tank: tankState(9000),
@@ -62,6 +69,30 @@ describe('buildWaterSnapshot', () => {
     })
     expect(snapshot.transferableSourceL.value).toBe(3500)
     expect(snapshot.totalAvailableL.value).toBe(9000 + 3500)
+  })
+
+  it('does not count rainwater as a separate stored reserve', () => {
+    const sources = [
+      source('rainwater-harvesting', 2900, true, {
+        kind: 'rainwater',
+        hasOwnStorage: false,
+        capacityL: 0,
+      }),
+      source('well-borehole', 6100, true),
+    ]
+    const snapshot = buildWaterSnapshot({
+      tank: tankState(18),
+      tankConfig: { ...tankConfig, capacityL: 20 },
+      sources,
+      waterInLPerMin: 2.5,
+      waterUsedLPerMin: 0,
+      inflowSinceStartL: 0,
+      usedSinceStartL: 0,
+      flowInputSource: 'configured-rate',
+    })
+    expect(snapshot.mainTankL.value).toBe(18)
+    expect(snapshot.transferableSourceL.value).toBe(6100)
+    expect(snapshot.totalAvailableL.value).toBe(18 + 6100)
   })
 
   it('tags Water In / Water Used / totals as estimated with the given flow input source, never as measured', () => {

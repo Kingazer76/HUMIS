@@ -27,11 +27,17 @@ function clamp(value: number, min: number, max: number): number {
  * always-estimated Water In / Water Used rates (decision 4). Never derives
  * a flow number from tank-level delta — the caller supplies rates that
  * were already computed from configured rate x duration.
+ *
+ * Rainwater is an inflow into the main tank, not a stored reserve, so
+ * sources with `hasOwnStorage: false` are left out of transferable totals.
  */
 export function buildWaterSnapshot(input: WaterAccountingInput): WaterSnapshot {
   const asOf = new Date().toISOString()
   const mainTankL = clamp(input.tank.levelL.value, 0, input.tankConfig.capacityL)
-  const transferableSourceL = input.sources.reduce((sum, s) => sum + s.state.currentL.value, 0)
+  const transferableSourceL = input.sources.reduce((sum, s) => {
+    if (!s.hasOwnStorage) return sum
+    return sum + s.state.currentL.value
+  }, 0)
   const totalAvailableL = mainTankL + transferableSourceL
 
   return {

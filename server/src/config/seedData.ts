@@ -30,19 +30,27 @@ export const FARM_LOCATION: FarmLocation = {
 
 export const INITIAL_TANK_LEVEL_L = 9700
 
+/**
+ * Simulated rain-into-main-tank rate while the farm rain sensor is on.
+ * Estimated from configured rate × time — not a new flow sensor.
+ */
+export const RAINWATER_INFLOW_L_PER_MIN = 2.5
+
 export const WATER_SOURCE_CONFIGS: WaterSourceConfig[] = [
   {
     id: 'rainwater-harvesting',
-    name: 'Rainwater Harvesting',
+    name: 'Rainwater',
     kind: 'rainwater',
-    capacityL: 5000,
-    nominalTransferRateLPerMin: 1.2,
+    capacityL: 0,
+    hasOwnStorage: false,
+    nominalTransferRateLPerMin: RAINWATER_INFLOW_L_PER_MIN,
   },
   {
     id: 'well-borehole',
     name: 'Well / Borehole',
     kind: 'well',
     capacityL: 10000,
+    hasOwnStorage: true,
     nominalTransferRateLPerMin: 1.8,
   },
   {
@@ -50,6 +58,7 @@ export const WATER_SOURCE_CONFIGS: WaterSourceConfig[] = [
     name: 'Reservoir / Pond',
     kind: 'reservoir',
     capacityL: 8000,
+    hasOwnStorage: true,
     nominalTransferRateLPerMin: 1.0,
   },
   {
@@ -57,13 +66,14 @@ export const WATER_SOURCE_CONFIGS: WaterSourceConfig[] = [
     name: 'Manual Supply',
     kind: 'manual',
     capacityL: 2000,
+    hasOwnStorage: true,
     nominalTransferRateLPerMin: 0,
   },
 ]
 
 /** Initial fill level (L) and whether each source auto-transfers into the tank. */
 export const INITIAL_SOURCE_STATE: Record<string, { currentL: number; active: boolean }> = {
-  'rainwater-harvesting': { currentL: 2900, active: true },
+  'rainwater-harvesting': { currentL: 0, active: true },
   'well-borehole': { currentL: 6100, active: true },
   'reservoir-pond': { currentL: 4100, active: false },
   'manual-supply': { currentL: 1000, active: false },

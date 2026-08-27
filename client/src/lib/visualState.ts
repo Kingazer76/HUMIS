@@ -112,7 +112,7 @@ export function weatherVisualDetail(
   if (state === 'rain') {
     return mode === 'forecast'
       ? 'Rain is in the forecast. Watering still follows the stored water and the soil.'
-      : 'Rain is falling. Watering still follows the stored water and the soil.'
+      : 'Rain is adding water to the main tank. Extra rain overflows when the tank is full.'
   }
   if (state === 'hot-dry') return 'Dry weather — fields may need water sooner.'
   return mode === 'forecast'

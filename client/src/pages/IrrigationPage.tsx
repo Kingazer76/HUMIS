@@ -248,7 +248,14 @@ export function IrrigationPage() {
             ) : undefined
           }
           value={system ? (system.rain.isRaining.value ? 'Rain detected' : 'No rain') : undefined}
-          hint={system ? <EstimateBadge tag={system.rain.isRaining.tag} /> : undefined}
+          hint={
+            system ? (
+              <>
+                <EstimateBadge tag={system.rain.isRaining.tag} />
+                <span> Rain fills the main tank</span>
+              </>
+            ) : undefined
+          }
         />
       </div>
 

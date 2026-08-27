@@ -7,9 +7,10 @@ simulation-based.
 
 V3 combines:
 
-- **V1's water-management foundation** — dashboard, main tank + external water sources,
-  crop-specific irrigation zones, irrigation controls, water-in/stored/used accounting,
-  days-of-water-remaining, and shortage prediction.
+- **V1's water-management foundation** — dashboard, a single main tank as stored water,
+  other sources that can fill that tank, crop-specific irrigation zones, irrigation
+  controls, water-in/stored/used accounting, days-of-water-remaining, and shortage
+  prediction. Rainwater is an incoming source into the main tank, not a second tank.
 - **V2's inclusivity goals** — a chatbot with Ghanaian-language voice support (via Khaya AI),
   planned for later phases, integrated into the existing dashboard rather than as a separate app.
 - **Real-hardware readiness** — every sensor/actuator interaction goes through a swappable
@@ -100,6 +101,8 @@ resets the farm, including tank size, field setup, and farm location. Weather pl
 Open-Meteo (no API key) at the farm's configured coordinates. If the forecast is missing,
 returns nothing, or throws, planning still returns a valid days-remaining / shortage result
 from tank level and usage. The farm rain sensor used for irrigation stays simulated.
+When that sensor detects rain, AquaFlow estimates rainwater inflow into the **main tank**.
+Extra rain is overflow and is not stored. Rainwater is not a separate reserve.
 
 ## Project status
 

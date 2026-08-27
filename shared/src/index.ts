@@ -35,17 +35,34 @@ export interface WaterSourceConfig {
   id: string
   name: string
   kind: WaterSourceKind
+  /**
+   * Own-tank size in litres. Unused when `hasOwnStorage` is false — that
+   * source has no tank of its own and only feeds the main tank.
+   */
   capacityL: number
+  /**
+   * When false, this source is an inflow into the main tank (rainwater).
+   * It must not be counted as a separate stored reserve.
+   */
+  hasOwnStorage: boolean
   /** Nominal transfer-into-tank rate (L/min) while this source is active. */
   nominalTransferRateLPerMin: number
 }
 
 export interface WaterSourceState {
   id: string
-  /** Simulated now; will be `measured` once a real level sensor exists for this source. */
+  /**
+   * Litres sitting in this source's own tank. Always 0 when the source has
+   * no independent storage (rainwater feeds the main tank directly).
+   */
   currentL: Tagged<number>
   /** Whether this source is currently enabled to transfer into the main tank. */
   active: boolean
+  /**
+   * Estimated L/min this source added to the main tank on the last tick.
+   * Used so the Water tab can show rain contributing without a second tank.
+   */
+  lastInflowLPerMin?: Tagged<number>
 }
 
 export type WaterSource = WaterSourceConfig & { state: WaterSourceState }
@@ -321,4 +338,4 @@ export interface TextToSpeechErrorResponse {
   reason: string
 }
 
-export const AQUAFLOW_SHARED_VERSION = '0.7.0'
+export const AQUAFLOW_SHARED_VERSION = '0.7.1'

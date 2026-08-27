@@ -63,18 +63,23 @@ function initialZoneRuntime(): Map<string, ZoneInternalState> {
 export interface TickResult {
   waterInL: number
   waterUsedL: number
+  /** Rainwater litres that actually entered the main tank this tick (overflow excluded). */
+  rainInL: number
   isRaining: boolean
 }
 
 /**
  * Reports plausible farm state without any real hardware attached.
  *
- * Every tick: active sources transfer configured-rate x duration into the
- * tank (depleting themselves as they do), active zones consume
- * configured-rate x duration from the tank (nothing sets a zone active yet
- * — that arrives with Phase 3's safety controller), soil moisture drifts
- * slowly downward with small sensor-like jitter, and rain is a simple
- * probabilistic event that tops up the rainwater source.
+ * Every tick: own-storage sources transfer configured-rate × duration into
+ * the main tank (depleting themselves as they do), rain detected adds a
+ * calculated rainwater inflow straight into the same main tank (no second
+ * rain tank), active zones consume configured-rate × duration from the
+ * tank, and soil moisture drifts slowly downward with small sensor-like
+ * jitter. Rain is a probabilistic farm-sensor event.
+ *
+ * Inflow never stores above the configured main-tank capacity. Extra rain
+ * or source water is overflow — counted as not stored, not as a reserve.
  *
  * Tank level is the one number this class treats as authoritative
  * "ground truth" for stored water — it is simulated today, and becomes
@@ -97,6 +102,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
   private simulatedMinutesElapsed = 0
   private lastWaterInLPerMin = 0
   private lastWaterUsedLPerMin = 0
+  private lastRainInLPerMin = 0
   /** Last-7-simulated-days usage buckets for shortage prediction. Not a history log. */
   private rollingConsumption = emptyRollingWindow()
   private cumulativeUsedByZoneL = new Map<string, number>(IRRIGATION_ZONE_CONFIGS.map((cfg) => [cfg.id, 0]))
@@ -112,26 +118,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
    */
   tick(elapsedMinutes: number): TickResult {
     this.advanceRain()
-
-    let waterInL = 0
-    for (const cfg of WATER_SOURCE_CONFIGS) {
-      const source = this.sources.get(cfg.id)
-      if (!source || !source.active || cfg.nominalTransferRateLPerMin <= 0) continue
-      const requested = cfg.nominalTransferRateLPerMin * elapsedMinutes
-      const transferred = Math.min(requested, source.currentL)
-      if (transferred <= 0) continue
-      source.currentL = clamp(source.currentL - transferred, 0, cfg.capacityL)
-      waterInL += transferred
-    }
-
-    // Rain tops up the rainwater harvesting reserve directly (independent of its transfer-out rate).
-    if (this.isRaining) {
-      const rainCfg = WATER_SOURCE_CONFIGS.find((c) => c.kind === 'rainwater')
-      const rainSource = rainCfg ? this.sources.get(rainCfg.id) : undefined
-      if (rainCfg && rainSource) {
-        rainSource.currentL = clamp(rainSource.currentL + 2.5 * elapsedMinutes, 0, rainCfg.capacityL)
-      }
-    }
+    const capacityL = getTankConfig().capacityL
 
     let waterUsedL = 0
     for (const cfg of this.zoneConfigById.values()) {
@@ -154,15 +141,43 @@ export class SimulatedDeviceProvider implements DeviceProvider {
       this.cumulativeUsedByZoneL.set(cfg.id, (this.cumulativeUsedByZoneL.get(cfg.id) ?? 0) + used)
     }
 
-    this.tankLevelL = clamp(this.tankLevelL + waterInL - waterUsedL, 0, getTankConfig().capacityL)
+    const levelAfterUse = clamp(this.tankLevelL - waterUsedL, 0, capacityL)
+    let roomL = Math.max(0, capacityL - levelAfterUse)
+    let waterInL = 0
+
+    for (const cfg of WATER_SOURCE_CONFIGS) {
+      if (!cfg.hasOwnStorage) continue
+      const source = this.sources.get(cfg.id)
+      if (!source || !source.active || cfg.nominalTransferRateLPerMin <= 0) continue
+      const requested = cfg.nominalTransferRateLPerMin * elapsedMinutes
+      const transferred = Math.min(requested, source.currentL, roomL)
+      if (transferred <= 0) continue
+      source.currentL = clamp(source.currentL - transferred, 0, cfg.capacityL)
+      waterInL += transferred
+      roomL -= transferred
+    }
+
+    // Rain → Water IN → main tank. No separate rainwater reserve.
+    let rainInL = 0
+    const rainCfg = WATER_SOURCE_CONFIGS.find((c) => c.kind === 'rainwater')
+    const rainSource = rainCfg ? this.sources.get(rainCfg.id) : undefined
+    if (this.isRaining && rainCfg && rainSource?.active) {
+      const requested = rainCfg.nominalTransferRateLPerMin * elapsedMinutes
+      rainInL = Math.min(requested, roomL)
+      waterInL += rainInL
+    }
+    if (rainSource) rainSource.currentL = 0
+
+    this.tankLevelL = clamp(levelAfterUse + waterInL, 0, capacityL)
     this.cumulativeInflowL += waterInL
     this.cumulativeUsedL += waterUsedL
     this.simulatedMinutesElapsed += elapsedMinutes
     this.rollingConsumption = recordConsumption(this.rollingConsumption, waterUsedL, elapsedMinutes)
     this.lastWaterInLPerMin = elapsedMinutes > 0 ? waterInL / elapsedMinutes : 0
     this.lastWaterUsedLPerMin = elapsedMinutes > 0 ? waterUsedL / elapsedMinutes : 0
+    this.lastRainInLPerMin = elapsedMinutes > 0 ? rainInL / elapsedMinutes : 0
 
-    return { waterInL, waterUsedL, isRaining: this.isRaining }
+    return { waterInL, waterUsedL, rainInL, isRaining: this.isRaining }
   }
 
   private advanceRain(): void {
@@ -184,14 +199,29 @@ export class SimulatedDeviceProvider implements DeviceProvider {
   }
 
   async getSources(): Promise<WaterSource[]> {
+    const asOf = nowIso()
     return WATER_SOURCE_CONFIGS.map((cfg) => {
       const state = this.sources.get(cfg.id)!
+      const lastInflowLPerMin =
+        cfg.kind === 'rainwater'
+          ? {
+              value: this.lastRainInLPerMin,
+              tag: 'estimated' as const,
+              flowInputSource: ACTIVE_FLOW_INPUT_SOURCE,
+              asOf,
+            }
+          : undefined
       return {
         ...cfg,
         state: {
           id: cfg.id,
-          currentL: { value: state.currentL, tag: 'simulated', asOf: nowIso() },
+          currentL: {
+            value: cfg.hasOwnStorage ? state.currentL : 0,
+            tag: 'simulated',
+            asOf,
+          },
           active: state.active,
+          lastInflowLPerMin,
         },
       }
     })
@@ -257,6 +287,7 @@ export class SimulatedDeviceProvider implements DeviceProvider {
     this.simulatedMinutesElapsed = 0
     this.lastWaterInLPerMin = 0
     this.lastWaterUsedLPerMin = 0
+    this.lastRainInLPerMin = 0
     this.rollingConsumption = emptyRollingWindow()
     this.cumulativeUsedByZoneL = new Map(IRRIGATION_ZONE_CONFIGS.map((cfg) => [cfg.id, 0]))
     this.zoneConfigById = copyZoneConfigs()
@@ -344,7 +375,30 @@ export class SimulatedDeviceProvider implements DeviceProvider {
     return { waterInLPerMin: this.lastWaterInLPerMin, waterUsedLPerMin: this.lastWaterUsedLPerMin }
   }
 
+  getLastRainInLPerMin(): number {
+    return this.lastRainInLPerMin
+  }
+
   getFlowInputSource() {
     return ACTIVE_FLOW_INPUT_SOURCE
+  }
+
+  /** Test isolation — force the farm rain sensor on or off. */
+  setRainForTests(isRaining: boolean): void {
+    this.isRaining = isRaining
+    this.rainTicksRemaining = isRaining ? 10_000 : 0
+  }
+
+  /** Test isolation — set stored main-tank litres, clamped to live capacity. */
+  setTankLevelForTests(levelL: number): void {
+    this.tankLevelL = clamp(levelL, 0, getTankConfig().capacityL)
+  }
+
+  /** Test isolation — empty or pause own-storage sources so rain can be tested alone. */
+  setSourceStateForTests(id: string, patch: Partial<SourceInternalState>): void {
+    const source = this.sources.get(id)
+    if (!source) return
+    if (patch.currentL !== undefined) source.currentL = patch.currentL
+    if (patch.active !== undefined) source.active = patch.active
   }
 }

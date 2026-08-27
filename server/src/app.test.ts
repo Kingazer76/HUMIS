@@ -39,6 +39,12 @@ describe('GET /api/sources', () => {
     expect(res.body.length).toBeGreaterThan(0)
     for (const source of res.body) {
       expect(source.state.currentL.tag).toBe('simulated')
+      if (source.kind === 'rainwater') {
+        expect(source.hasOwnStorage).toBe(false)
+        expect(source.state.currentL.value).toBe(0)
+      } else {
+        expect(source.hasOwnStorage).toBe(true)
+      }
     }
   })
 })

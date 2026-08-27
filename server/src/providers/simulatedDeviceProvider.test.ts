@@ -140,4 +140,53 @@ describe('SimulatedDeviceProvider', () => {
     const afterTick = await provider.getTankLevel()
     expect(afterTick.levelL.value).toBeLessThanOrEqual(5000)
   })
+
+  it('adds rain to water in and the main tank, without storing rain in a second tank', async () => {
+    pauseOwnStorage(provider)
+    provider.setTankLevelForTests(9700)
+    provider.setRainForTests(false)
+    const dry = provider.tick(2)
+    expect(dry.rainInL).toBe(0)
+    expect(dry.waterInL).toBe(0)
+
+    provider.setRainForTests(true)
+    const raining = provider.tick(2)
+    expect(raining.isRaining).toBe(true)
+    expect(raining.rainInL).toBeCloseTo(5)
+    expect(raining.waterInL).toBeCloseTo(5)
+
+    const tank = await provider.getTankLevel()
+    expect(tank.levelL.value).toBeCloseTo(9705)
+
+    const rain = (await provider.getSources()).find((s) => s.kind === 'rainwater')!
+    expect(rain.hasOwnStorage).toBe(false)
+    expect(rain.state.currentL.value).toBe(0)
+    expect(rain.state.lastInflowLPerMin?.value).toBeCloseTo(2.5)
+    expect(rain.state.lastInflowLPerMin?.tag).toBe('estimated')
+    expect(rain.state.lastInflowLPerMin?.flowInputSource).toBe('configured-rate')
+  })
+
+  it('overflows rain instead of storing above the configured main-tank capacity', async () => {
+    applyTankSettings({ capacityL: 20, lowThresholdPct: 25, criticalThresholdPct: 15 })
+    provider.applyTankCapacity(20)
+    pauseOwnStorage(provider)
+    provider.setTankLevelForTests(18)
+    provider.setRainForTests(true)
+
+    const result = provider.tick(2) // 2.5 L/min × 2 min = 5 L requested
+    expect(result.rainInL).toBeCloseTo(2)
+    expect(result.waterInL).toBeCloseTo(2)
+
+    const tank = await provider.getTankLevel()
+    expect(tank.levelL.value).toBe(20)
+
+    const rain = (await provider.getSources()).find((s) => s.kind === 'rainwater')!
+    expect(rain.state.currentL.value).toBe(0)
+  })
 })
+
+function pauseOwnStorage(provider: SimulatedDeviceProvider) {
+  provider.setSourceStateForTests('well-borehole', { active: false })
+  provider.setSourceStateForTests('reservoir-pond', { active: false })
+  provider.setSourceStateForTests('manual-supply', { active: false })
+}

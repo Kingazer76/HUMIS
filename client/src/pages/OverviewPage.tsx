@@ -235,7 +235,7 @@ export function OverviewPage() {
                 headline={weatherVisualHeadline(weatherVisual)}
                 detail={
                   <>
-                    {weatherVisualDetail(weatherVisual)} Farm rain sensor — not the Planning forecast.
+                    {weatherVisualDetail(weatherVisual)} Farm rain sensor — rain fills the main tank. Not the Planning forecast.
                   </>
                 }
               />
@@ -265,7 +265,7 @@ export function OverviewPage() {
           label="Available water"
           badge={water ? <EstimateBadge tag="simulated" /> : undefined}
           value={water ? formatLiters(water.totalAvailableL.value) : undefined}
-          hint="Stored water plus other sources"
+          hint="Main tank plus other stored sources. Rain fills the main tank, not a separate tank."
         />
         <SectionCard
           tone={alertTone}
