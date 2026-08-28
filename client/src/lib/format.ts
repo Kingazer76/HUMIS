@@ -86,3 +86,40 @@ export function formatNextCheckHours(hours: number): string {
   if (hours <= 1) return 'Check again in about 1 hour'
   return `Check again in about ${Math.round(hours)} hours`
 }
+
+/** Short soil name for lists. Internal soil ids stay the same. */
+export function farmerSoilName(id: string | undefined): string {
+  if (id === 'sand') return 'Sandy soil'
+  if (id === 'sandy-loam') return 'Sandy loam'
+  if (id === 'loam') return 'Loamy soil'
+  if (id === 'silt-loam') return 'Silty soil'
+  if (id === 'clay-loam') return 'Clay loam'
+  if (id === 'clay') return 'Clay soil'
+  return 'Loamy soil'
+}
+
+/** Soil choice shown in Settings. Internal id is unchanged. */
+export function farmerSoilChoiceLabel(id: string): string {
+  if (id === 'sand') return 'Sandy soil — drains water quickly'
+  if (id === 'sandy-loam') return 'Sandy loam — drains fairly quickly'
+  if (id === 'loam') return 'Loamy soil — holds water well'
+  if (id === 'silt-loam') return 'Silty soil — holds water well'
+  if (id === 'clay-loam') return 'Clay loam — holds water for longer'
+  if (id === 'clay') return 'Clay soil — holds water for longer'
+  return farmerSoilName(id)
+}
+
+/**
+ * Everyday growth-stage wording. Internal stage ids (initial / vegetative /
+ * mid / late) stay the same so watering math does not change.
+ */
+export function farmerGrowthStageLabel(stage: { id: string; name: string }): string {
+  if (stage.id === 'initial') return 'Just planted'
+  if (stage.id === 'vegetative') return 'Growing leaves'
+  if (stage.id === 'late') return 'Ready for harvest'
+  const name = stage.name.toLowerCase()
+  if (name.includes('fruit') && name.includes('flower')) return 'Flowering / producing fruit'
+  if (name.includes('fruit')) return 'Producing fruit'
+  if (name.includes('grain') || name.includes('peg') || name.includes('flower')) return 'Flowering'
+  return 'Flowering'
+}

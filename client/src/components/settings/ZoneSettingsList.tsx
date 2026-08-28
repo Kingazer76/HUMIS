@@ -12,8 +12,14 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { MoreDetails, SettingHint } from '@/components/settings/MoreDetails'
 import { api } from '@/lib/api'
-import { formatIrrigationPreference } from '@/lib/format'
+import {
+  farmerGrowthStageLabel,
+  farmerSoilChoiceLabel,
+  farmerSoilName,
+  formatIrrigationPreference,
+} from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 const selectClass = cn(
@@ -30,11 +36,11 @@ interface ZoneSettingsListProps {
   onSaved: () => Promise<void>
 }
 
-function stageLabel(zone: IrrigationZone): string {
+function stageFor(zone: IrrigationZone) {
   return (
-    zone.crop.stages?.find((s) => s.id === zone.growthStageId)?.name ??
-    zone.crop.stages?.find((s) => s.id === 'mid')?.name ??
-    'Mid-season'
+    zone.crop.stages?.find((s) => s.id === zone.growthStageId) ??
+    zone.crop.stages?.find((s) => s.id === 'mid') ??
+    { id: 'mid', name: 'Mid-season', kc: 1, kcSource: 'assumption' as const }
   )
 }
 
@@ -107,7 +113,7 @@ export function ZoneSettingsList({ zones, crops, soils, disabled, onSaved }: Zon
       }
     } catch {
       setOk(false)
-      setMessage('Could not save. Check that the AquaFlow server is running.')
+      setMessage("Couldn't save. Check that AquaFlow is running.")
     } finally {
       setPending(false)
     }
@@ -123,7 +129,7 @@ export function ZoneSettingsList({ zones, crops, soils, disabled, onSaved }: Zon
       if (result.ok) await onSaved()
     } catch {
       setOk(false)
-      setMessage('Could not reset. Check that the AquaFlow server is running.')
+      setMessage("Couldn't restore. Check that AquaFlow is running.")
     } finally {
       setPending(false)
     }
@@ -133,17 +139,28 @@ export function ZoneSettingsList({ zones, crops, soils, disabled, onSaved }: Zon
     <>
       <div className="flex flex-col divide-y divide-border">
         {zones.map((zone) => (
-          <div key={zone.id} className="flex items-center justify-between gap-3 py-3">
-            <div className="min-w-0">
+          <div key={zone.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 space-y-1.5">
               <span className="text-sm font-medium text-foreground">{zone.name}</span>
+              <p className="text-sm text-foreground">
+                <span className="text-muted-foreground">What are you growing? </span>
+                {zone.crop.name}
+              </p>
+              <p className="text-sm text-foreground">
+                <span className="text-muted-foreground">What kind of soil do you have? </span>
+                {farmerSoilName(zone.soilId)}
+              </p>
+              <p className="text-sm text-foreground">
+                <span className="text-muted-foreground">How is the crop growing? </span>
+                {farmerGrowthStageLabel(stageFor(zone))}
+              </p>
               <p className="text-xs text-muted-foreground">
-                {zone.crop.name} · {getSoil(zone.soilId).name} · {stageLabel(zone)} ·{' '}
-                {formatIrrigationPreference(zone.irrigationPreference)}
+                Watering: {formatIrrigationPreference(zone.irrigationPreference)}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex shrink-0 gap-2">
               <Button size="sm" variant="outline" disabled={disabled || pending} onClick={() => openEdit(zone)}>
-                Edit
+                Change
               </Button>
               <Button
                 size="sm"
@@ -151,7 +168,7 @@ export function ZoneSettingsList({ zones, crops, soils, disabled, onSaved }: Zon
                 disabled={disabled || pending}
                 onClick={() => void resetZone(zone.id)}
               >
-                Reset
+                Back to usual
               </Button>
             </div>
           </div>
@@ -162,20 +179,21 @@ export function ZoneSettingsList({ zones, crops, soils, disabled, onSaved }: Zon
       ) : null}
 
       <Dialog open={editing !== null} onOpenChange={(open) => { if (!open && !pending) setEditing(null) }}>
-        <DialogContent>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit this field</DialogTitle>
+            <DialogTitle>Tell AquaFlow about this field</DialogTitle>
             <DialogDescription>
-              AquaFlow uses the crop, soil, and growth stage together to decide when to water. Leave the soil numbers blank to use that calculated range.
+              Answer a few simple questions. AquaFlow uses them to decide when this field needs water.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="zone-name">Field name</Label>
+              <Label htmlFor="zone-name">What do you call this field?</Label>
               <Input id="zone-name" value={name} disabled={pending} onChange={(e) => setName(e.target.value)} />
+              <SettingHint>A short name so you can tell your fields apart.</SettingHint>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="zone-crop">Crop</Label>
+              <Label htmlFor="zone-crop">What are you growing?</Label>
               <select
                 id="zone-crop"
                 className={selectClass}
@@ -189,9 +207,10 @@ export function ZoneSettingsList({ zones, crops, soils, disabled, onSaved }: Zon
                   </option>
                 ))}
               </select>
+              <SettingHint>Pick the crop in this field.</SettingHint>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="zone-soil">Soil</Label>
+              <Label htmlFor="zone-soil">What kind of soil do you have?</Label>
               <select
                 id="zone-soil"
                 className={selectClass}
@@ -201,14 +220,15 @@ export function ZoneSettingsList({ zones, crops, soils, disabled, onSaved }: Zon
               >
                 {soilOptions.map((soil) => (
                   <option key={soil.id} value={soil.id}>
-                    {soil.name}
+                    {farmerSoilChoiceLabel(soil.id)}
                   </option>
                 ))}
               </select>
+              <SettingHint>Different soils hold water for different amounts of time.</SettingHint>
             </div>
             {selectedCrop?.stages && selectedCrop.stages.length > 0 ? (
               <div className="space-y-1.5">
-                <Label htmlFor="zone-stage">Growth stage</Label>
+                <Label htmlFor="zone-stage">How is the crop growing?</Label>
                 <select
                   id="zone-stage"
                   className={selectClass}
@@ -218,14 +238,15 @@ export function ZoneSettingsList({ zones, crops, soils, disabled, onSaved }: Zon
                 >
                   {selectedCrop.stages.map((stage) => (
                     <option key={stage.id} value={stage.id}>
-                      {stage.name}
+                      {farmerGrowthStageLabel(stage)}
                     </option>
                   ))}
                 </select>
+                <SettingHint>Your crop needs different amounts of water as it grows.</SettingHint>
               </div>
             ) : null}
             <div className="space-y-1.5">
-              <Label htmlFor="zone-preference">Watering style</Label>
+              <Label htmlFor="zone-preference">How generously should AquaFlow water?</Label>
               <select
                 id="zone-preference"
                 className={selectClass}
@@ -234,41 +255,51 @@ export function ZoneSettingsList({ zones, crops, soils, disabled, onSaved }: Zon
                 onChange={(e) => setPreference(e.target.value as IrrigationPreference)}
               >
                 <option value="standard">Usual watering</option>
-                <option value="water-saving">Save water (starts a little later, stops a little sooner)</option>
-                <option value="aggressive">Extra watering (starts sooner, runs a little longer)</option>
+                <option value="water-saving">Save water — wait a little longer before watering</option>
+                <option value="aggressive">Extra water — water a bit sooner</option>
               </select>
+              <SettingHint>This only changes how soon watering starts and stops.</SettingHint>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="zone-min">Dry-soil target (%) </Label>
-                <Input
-                  id="zone-min"
-                  type="number"
-                  min={0}
-                  max={100}
-                  placeholder="crop usual"
-                  value={overrideMin}
-                  disabled={pending}
-                  onChange={(e) => setOverrideMin(e.target.value)}
-                />
+            <MoreDetails>
+              <p className="text-xs text-muted-foreground">
+                AquaFlow currently plans water for about 500 square metres per field. Field size cannot be changed yet.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Leave the next two boxes blank unless you want your own start and stop numbers. AquaFlow already
+                chooses them from the crop, soil, and growth stage.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="zone-min">When should watering start?</Label>
+                  <Input
+                    id="zone-min"
+                    type="number"
+                    min={0}
+                    max={100}
+                    placeholder="let AquaFlow choose"
+                    value={overrideMin}
+                    disabled={pending}
+                    onChange={(e) => setOverrideMin(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="zone-max">When should watering stop?</Label>
+                  <Input
+                    id="zone-max"
+                    type="number"
+                    min={0}
+                    max={100}
+                    placeholder="let AquaFlow choose"
+                    value={overrideMax}
+                    disabled={pending}
+                    onChange={(e) => setOverrideMax(e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="zone-max">Wet-enough target (%)</Label>
-                <Input
-                  id="zone-max"
-                  type="number"
-                  min={0}
-                  max={100}
-                  placeholder="crop usual"
-                  value={overrideMax}
-                  disabled={pending}
-                  onChange={(e) => setOverrideMax(e.target.value)}
-                />
-              </div>
-            </div>
-            <p className="text-[11px] text-muted-foreground/70">
-              The dry number must be below the wet-enough number. AquaFlow starts watering at the dry number and stops at the wet-enough number. If you leave both blank, the start line comes from this crop, soil, and growth stage.
-            </p>
+              <SettingHint>
+                These are optional soil-wetness numbers (0–100). The start number must be below the stop number.
+              </SettingHint>
+            </MoreDetails>
             {editing && message ? (
               <p className={`text-sm ${ok ? 'text-muted-foreground' : 'text-destructive'}`}>{message}</p>
             ) : null}

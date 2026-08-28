@@ -3,6 +3,7 @@ import type { TankConfig } from '@aquaflow/shared'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { MoreDetails, SettingHint } from '@/components/settings/MoreDetails'
 import { api } from '@/lib/api'
 
 interface TankConfigFormProps {
@@ -37,7 +38,7 @@ export function TankConfigForm({ tank, disabled, onSaved }: TankConfigFormProps)
       if (result.ok) await onSaved()
     } catch {
       setOk(false)
-      setMessage('Could not save. Check that the AquaFlow server is running.')
+      setMessage("Couldn't save. Check that AquaFlow is running.")
     } finally {
       setPending(false)
     }
@@ -53,7 +54,7 @@ export function TankConfigForm({ tank, disabled, onSaved }: TankConfigFormProps)
       if (result.ok) await onSaved()
     } catch {
       setOk(false)
-      setMessage('Could not restore. Check that the AquaFlow server is running.')
+      setMessage("Couldn't restore. Check that AquaFlow is running.")
     } finally {
       setPending(false)
     }
@@ -63,7 +64,7 @@ export function TankConfigForm({ tank, disabled, onSaved }: TankConfigFormProps)
     <>
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <Label htmlFor="tank-capacity">Tank capacity (L)</Label>
+          <Label htmlFor="tank-capacity">How much water can your tank hold?</Label>
           <Input
             id="tank-capacity"
             type="number"
@@ -73,10 +74,10 @@ export function TankConfigForm({ tank, disabled, onSaved }: TankConfigFormProps)
             disabled={disabled || pending}
             onChange={(e) => setCapacityL(e.target.value)}
           />
-          <p className="text-[11px] text-muted-foreground/70">How many litres this tank holds when it is full.</p>
+          <SettingHint>This is the most water your main storage tank can hold, in litres.</SettingHint>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="low-threshold">Low-water threshold (%)</Label>
+          <Label htmlFor="low-threshold">When should AquaFlow warn you the tank is getting low?</Label>
           <Input
             id="low-threshold"
             type="number"
@@ -87,10 +88,10 @@ export function TankConfigForm({ tank, disabled, onSaved }: TankConfigFormProps)
             disabled={disabled || pending}
             onChange={(e) => setLowThresholdPct(e.target.value)}
           />
-          <p className="text-[11px] text-muted-foreground/70">Warn when the tank has fallen to this percent full.</p>
+          <SettingHint>Warn when the tank is only this percent full.</SettingHint>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="critical-threshold">Critical-water threshold (%)</Label>
+          <Label htmlFor="critical-threshold">When should watering stop to protect the pump?</Label>
           <Input
             id="critical-threshold"
             type="number"
@@ -101,15 +102,21 @@ export function TankConfigForm({ tank, disabled, onSaved }: TankConfigFormProps)
             disabled={disabled || pending}
             onChange={(e) => setCriticalThresholdPct(e.target.value)}
           />
-          <p className="text-[11px] text-muted-foreground/70">Stop watering when the tank is this empty, to protect the pump.</p>
+          <SettingHint>Stop new watering when the tank is this empty, so the pump is not run dry.</SettingHint>
         </div>
       </div>
+      <MoreDetails>
+        <p className="text-xs text-muted-foreground">
+          The warning and stop numbers are a percent of a full tank. A common setup is 15,000 litres,
+          warn at 25% full, and stop at 15% full.
+        </p>
+      </MoreDetails>
       <div className="mt-4 flex gap-2">
         <Button disabled={disabled || pending} onClick={() => void save()}>
-          {pending ? 'Saving…' : 'Save settings'}
+          {pending ? 'Saving…' : 'Save tank'}
         </Button>
         <Button variant="outline" disabled={disabled || pending} onClick={() => void restore()}>
-          Restore defaults
+          Back to usual tank
         </Button>
       </div>
       {message ? (
