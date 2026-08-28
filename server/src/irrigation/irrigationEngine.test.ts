@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { CropProfile, IrrigationZone } from '@aquaflow/shared'
+import type { CropProfile, IrrigationZone, SoilId } from '@aquaflow/shared'
+import { getCropProfile } from '../agronomy/cropCatalog.js'
 import { decideZoneIrrigation } from './irrigationEngine.js'
 
 const maize: CropProfile = { id: 'maize', name: 'Maize', defaultMinMoisturePct: 40, defaultMaxMoisturePct: 60, priority: 'medium' }
@@ -19,6 +20,22 @@ function zone(moisturePct: number, active: boolean): IrrigationZone {
       active,
       lastWateredAt: null,
     },
+  }
+}
+
+function agronomicZone(
+  crop: CropProfile,
+  soilId: SoilId,
+  growthStageId: string,
+  moisturePct: number,
+  active: boolean,
+): IrrigationZone {
+  return {
+    ...zone(moisturePct, active),
+    cropId: crop.id,
+    crop,
+    soilId,
+    growthStageId,
   }
 }
 
@@ -133,5 +150,100 @@ describe('decideZoneIrrigation', () => {
     }
     // Override min 30, then -5 → 25. 28% is still above 25.
     expect(decideZoneIrrigation({ zone: zoneWithBoth, ...HEALTHY_TANK }).action).toBe('hold')
+  })
+
+  it('uses a different start line on sand than on clay for the same crop and stage', () => {
+    const tomato = getCropProfile('tomato')!
+    const sand = decideZoneIrrigation({
+      zone: agronomicZone(tomato, 'sand', 'mid', 40, false),
+      ...HEALTHY_TANK,
+    })
+    const clay = decideZoneIrrigation({
+      zone: agronomicZone(tomato, 'clay', 'mid', 40, false),
+      ...HEALTHY_TANK,
+    })
+    expect(sand.triggerPct).not.toBe(clay.triggerPct)
+    expect(sand.status).toBeDefined()
+  })
+
+  it('uses a different start line at establishment than at mid-season', () => {
+    const maizeCrop = getCropProfile('maize')!
+    const initial = decideZoneIrrigation({
+      zone: agronomicZone(maizeCrop, 'loam', 'initial', 40, false),
+      ...HEALTHY_TANK,
+    })
+    const mid = decideZoneIrrigation({
+      zone: agronomicZone(maizeCrop, 'loam', 'mid', 40, false),
+      ...HEALTHY_TANK,
+    })
+    expect(initial.triggerPct).not.toBe(mid.triggerPct)
+  })
+
+  it('delays a start when substantial rain is expected and the crop can wait', () => {
+    const decision = decideZoneIrrigation({
+      zone: zone(35, false),
+      ...HEALTHY_TANK,
+      forecast: {
+        expectedRainfallMm: 12,
+        precipitationProbabilityPct: 70,
+        condition: 'rain',
+      },
+    })
+    expect(decision.action).toBe('hold')
+    expect(decision.status).toBe('monitor')
+    expect(decision.reason).toMatch(/rain/i)
+  })
+
+  it('still starts when soil is urgently dry even if rain is expected', () => {
+    const decision = decideZoneIrrigation({
+      zone: zone(30, false),
+      ...HEALTHY_TANK,
+      forecast: {
+        expectedRainfallMm: 12,
+        precipitationProbabilityPct: 70,
+        condition: 'rain',
+      },
+    })
+    expect(decision.action).toBe('start')
+    expect(decision.status).toBe('irrigation-urgent')
+  })
+
+  it('delays a start when recent rainfall is significant and the crop can wait', () => {
+    const decision = decideZoneIrrigation({
+      zone: zone(35, false),
+      ...HEALTHY_TANK,
+      forecast: {
+        expectedRainfallMm: 0,
+        precipitationProbabilityPct: 10,
+        condition: 'clear',
+        recentRainfallMm: 8,
+      },
+    })
+    expect(decision.action).toBe('hold')
+    expect(decision.status).toBe('monitor')
+    expect(decision.reason).toMatch(/recently/i)
+  })
+
+  it('withholds a start when the main tank has too little stored water', () => {
+    const decision = decideZoneIrrigation({
+      zone: zone(30, false),
+      ...HEALTHY_TANK,
+      availableTankL: 5,
+    })
+    expect(decision.action).toBe('hold')
+    expect(decision.status).toBe('irrigation-limited-by-water')
+    expect(decision.reason).toMatch(/tank/i)
+  })
+
+  it('still forces a stop at the critical tank level for an agronomic crop', () => {
+    const tomato = getCropProfile('tomato')!
+    const decision = decideZoneIrrigation({
+      zone: agronomicZone(tomato, 'loam', 'mid', 20, true),
+      tankLevelPct: 10,
+      criticalThresholdPct: 15,
+      availableTankL: 1000,
+    })
+    expect(decision.action).toBe('stop')
+    expect(decision.status).toBe('irrigation-limited-by-water')
   })
 })

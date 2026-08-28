@@ -99,6 +99,10 @@ vi.mock('../providers/index.js', () => ({
   simulatedProvider: null,
 }))
 
+vi.mock('../forecast/weatherProvider.js', () => ({
+  getForecastSafely: async () => null,
+}))
+
 describe('runAutoIrrigationCycle', () => {
   beforeEach(() => {
     vi.useFakeTimers()

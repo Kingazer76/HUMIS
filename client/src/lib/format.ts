@@ -72,3 +72,17 @@ export function formatIrrigationPreference(preference: string): string {
   if (preference === 'aggressive') return 'Extra watering'
   return 'Usual watering'
 }
+
+export function formatIrrigationAdviceStatus(status: string): string {
+  if (status === 'no-irrigation-needed') return 'No irrigation needed'
+  if (status === 'monitor') return 'Monitor'
+  if (status === 'irrigation-recommended') return 'Irrigation recommended'
+  if (status === 'irrigation-urgent') return 'Irrigation urgent'
+  if (status === 'irrigation-limited-by-water') return 'Limited by tank water'
+  return status
+}
+
+export function formatNextCheckHours(hours: number): string {
+  if (hours <= 1) return 'Check again in about 1 hour'
+  return `Check again in about ${Math.round(hours)} hours`
+}

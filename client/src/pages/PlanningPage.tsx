@@ -1,8 +1,9 @@
 import { AlertTriangle, CalendarDays, CloudSun, Leaf, ShieldCheck } from '@/lib/icons'
-import type { WeatherForecastSnapshot } from '@aquaflow/shared'
+import type { IrrigationAdviceStatus, WeatherForecastSnapshot } from '@aquaflow/shared'
 import { EstimateBadge } from '@/components/shared/EstimateBadge'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionCard } from '@/components/shared/SectionCard'
+import { StatusBadge, type StatusTone } from '@/components/shared/StatusBadge'
 import {
   ShortageStateIllustration,
   TankLevelIllustration,
@@ -11,7 +12,7 @@ import {
 import { VisualGlance } from '@/components/visual/VisualGlance'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
-import { daysRemainingHint, formatDaysRemainingDisplay, formatLitersPerDay, formatMm, formatPercent, formatTemperatureC } from '@/lib/format'
+import { daysRemainingHint, formatDaysRemainingDisplay, formatIrrigationAdviceStatus, formatLiters, formatLitersPerDay, formatMm, formatNextCheckHours, formatPercent, formatTemperatureC } from '@/lib/format'
 import {
   deriveShortageVisualState,
   deriveTankVisualState,
@@ -125,6 +126,15 @@ function WeatherPlanningSection({
   )
 }
 
+function adviceTone(status: IrrigationAdviceStatus): StatusTone {
+  if (status === 'no-irrigation-needed') return 'good'
+  if (status === 'monitor') return 'info'
+  if (status === 'irrigation-recommended') return 'warning'
+  if (status === 'irrigation-urgent') return 'critical'
+  if (status === 'irrigation-limited-by-water') return 'warning'
+  return 'neutral'
+}
+
 /**
  * Planning tab. Shortage pictures reuse the same prediction as Overview.
  * Rain and weather on this page comes from the live Open-Meteo forecast,
@@ -133,6 +143,7 @@ function WeatherPlanningSection({
 export function PlanningPage() {
   const { data: planning, error: planningError } = usePolling(api.getPlanning)
   const { data: water } = usePolling(api.getWater)
+  const { data: advice } = usePolling(api.getIrrigationAdvice)
 
   const fillPct = water ? (water.mainTankL.value / water.tank.capacityL) * 100 : undefined
   const tankVisual =
@@ -220,6 +231,37 @@ export function PlanningPage() {
           hint={planning ? consumptionHint(planning.observedDays, planning.sevenDayAverageConsumptionL.value) : undefined}
         />
       </div>
+
+      <SectionCard
+        icon={<Leaf className="h-4 w-4" />}
+        title="Field watering advice"
+        description="Same crop, soil, weather, and tank rules as automatic watering. This does not open valves by itself."
+      >
+        {advice?.zones && advice.zones.length > 0 ? (
+          <div className="flex flex-col divide-y divide-border">
+            {advice.zones.map((zone) => (
+              <div key={zone.zoneId} className="flex flex-col gap-1.5 py-3 first:pt-0 last:pb-0">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-foreground">{zone.zoneName}</p>
+                  <StatusBadge tone={adviceTone(zone.status)}>
+                    {formatIrrigationAdviceStatus(zone.status)}
+                  </StatusBadge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Crop: {zone.cropName} · Soil: {zone.soilName} · Growth stage: {zone.growthStageName}
+                </p>
+                <p className="text-sm text-foreground">{zone.reason}</p>
+                <p className="text-[11px] text-muted-foreground/70">
+                  About {formatLiters(zone.estimatedNeedL)} needed · tank has {formatLiters(zone.availableTankL)} ·{' '}
+                  {formatNextCheckHours(zone.nextCheckHours)}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Loading field watering advice…</p>
+        )}
+      </SectionCard>
 
       <SectionCard
         icon={<AlertTriangle className="h-4 w-4" />}

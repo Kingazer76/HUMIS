@@ -3,6 +3,7 @@ import type {
   FarmLocation,
   HistorySnapshot,
   IrrigationActionResult,
+  IrrigationAdviceSnapshot,
   IrrigationZone,
   OperationMode,
   PlanningSnapshot,
@@ -61,6 +62,7 @@ export const api = {
   getZones: () => getJson<IrrigationZone[]>('/api/zones'),
   getSystem: () => getJson<SystemSnapshot>('/api/system'),
   getPlanning: () => getJson<PlanningSnapshot>('/api/planning'),
+  getIrrigationAdvice: () => getJson<IrrigationAdviceSnapshot>('/api/irrigation/advice'),
   getHistory: () => getJson<HistorySnapshot>('/api/history'),
   getSettings: () => getJson<SettingsSnapshot>('/api/settings'),
 
@@ -77,6 +79,8 @@ export const api = {
       sensorMode?: IrrigationZone['sensorMode']
       overrideMinPct?: number | null
       overrideMaxPct?: number | null
+      soilId?: IrrigationZone['soilId']
+      growthStageId?: string
     },
   ) => putJson<SettingsActionResult>(`/api/settings/zones/${zoneId}`, body),
   resetZone: (zoneId: string) => postJson<SettingsActionResult>(`/api/settings/zones/${zoneId}/reset`),

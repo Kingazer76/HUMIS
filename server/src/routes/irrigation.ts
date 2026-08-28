@@ -1,16 +1,24 @@
-import type { OperationMode } from '@aquaflow/shared'
+import type { IrrigationAdviceSnapshot, OperationMode } from '@aquaflow/shared'
 import { Router } from 'express'
+import { buildIrrigationAdvice } from '../irrigation/buildIrrigationAdvice.js'
 import { safetyController } from '../irrigation/safetyController.js'
 
 export const irrigationRouter = Router()
 
 /**
- * Every route here does nothing but validate the request shape and hand
- * off to `safetyController` — none of them touch `DeviceProvider` directly,
- * and none of them contain any irrigation decision logic themselves.
- * `ok: false` responses are expected, normal outcomes (a safety interlock
- * rejected the action), not server errors.
+ * Every mutating route here does nothing but validate the request shape and
+ * hand off to `safetyController`. GET /advice is read-only: it uses the
+ * same decideZoneIrrigation function Auto mode uses, and never opens valves.
  */
+
+irrigationRouter.get('/advice', async (_req, res, next) => {
+  try {
+    const snapshot: IrrigationAdviceSnapshot = await buildIrrigationAdvice()
+    res.json(snapshot)
+  } catch (error) {
+    next(error)
+  }
+})
 
 irrigationRouter.post('/:zoneId/start', async (req, res, next) => {
   try {

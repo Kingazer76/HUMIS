@@ -12,6 +12,7 @@ import {
 } from '../config/farmSettings.js'
 import { applyZoneSettingsPatch } from '../config/zoneSettings.js'
 import { CROP_PROFILES } from '../config/seedData.js'
+import { SOIL_CATALOG } from '@aquaflow/shared'
 import { deviceProvider, simulatedProvider } from '../providers/index.js'
 
 export const settingsRouter = Router()
@@ -31,6 +32,7 @@ settingsRouter.get('/', async (_req, res, next) => {
       locationDefaults: getDefaultFarmLocation(),
       zones,
       crops: CROP_PROFILES.map((c) => ({ ...c })),
+      soils: SOIL_CATALOG.map((s) => ({ ...s })),
     }
     res.json(snapshot)
   } catch (error) {
@@ -120,6 +122,8 @@ settingsRouter.put('/zones/:id', async (req, res, next) => {
       sensorMode: req.body?.sensorMode,
       overrideMinPct: req.body?.overrideMinPct,
       overrideMaxPct: req.body?.overrideMaxPct,
+      soilId: req.body?.soilId,
+      growthStageId: req.body?.growthStageId,
     })
     if (!result.ok) {
       const payload: SettingsActionResult = { ok: false, reason: result.reason }

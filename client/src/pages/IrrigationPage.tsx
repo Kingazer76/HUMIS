@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { Activity, CloudRain, Database, Plus, Power, Settings2, Sprout } from '@/lib/icons'
-import { moistureTargetsForZone, type IrrigationZone, type OperationMode } from '@aquaflow/shared'
+import {
+  getSoil,
+  moistureTargetsForZone,
+  type IrrigationAdviceStatus,
+  type IrrigationZone,
+  type OperationMode,
+  type ZoneIrrigationAdvice,
+} from '@aquaflow/shared'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -8,12 +15,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EstimateBadge } from '@/components/shared/EstimateBadge'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { SectionCard } from '@/components/shared/SectionCard'
-import { StatusBadge } from '@/components/shared/StatusBadge'
+import { StatusBadge, type StatusTone } from '@/components/shared/StatusBadge'
 import { SoilStateIllustration, TankLevelIllustration, WeatherIllustration } from '@/components/visual/FarmIllustrations'
 import { VisualGlance } from '@/components/visual/VisualGlance'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
-import { formatIrrigationPreference, formatPercent } from '@/lib/format'
+import { formatIrrigationAdviceStatus, formatIrrigationPreference, formatLiters, formatNextCheckHours, formatPercent } from '@/lib/format'
 import {
   deriveIrrigationVisualState,
   deriveSoilVisualState,
@@ -29,17 +36,37 @@ import {
 
 interface ZoneCardProps {
   zone: IrrigationZone
+  advice: ZoneIrrigationAdvice | undefined
   pending: boolean
   actionError: string | undefined
   onToggle: (zone: IrrigationZone) => void
 }
 
-function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
+function adviceTone(status: IrrigationAdviceStatus): StatusTone {
+  if (status === 'no-irrigation-needed') return 'good'
+  if (status === 'monitor') return 'info'
+  if (status === 'irrigation-recommended') return 'warning'
+  if (status === 'irrigation-urgent') return 'critical'
+  if (status === 'irrigation-limited-by-water') return 'warning'
+  return 'neutral'
+}
+
+function growthStageName(zone: IrrigationZone): string {
+  return (
+    zone.crop.stages?.find((s) => s.id === zone.growthStageId)?.name ??
+    zone.crop.stages?.find((s) => s.id === 'mid')?.name ??
+    'Mid-season'
+  )
+}
+
+function ZoneCard({ zone, advice, pending, actionError, onToggle }: ZoneCardProps) {
   const { minPct, maxPct } = moistureTargetsForZone(zone)
   const moisture = zone.state.soilMoisturePct.value
   const soilVisual = deriveSoilVisualState(moisture, minPct, maxPct, zone.state.active)
   const irrigationVisual = deriveIrrigationVisualState(zone.state.active, soilVisual === 'dry')
   const inRange = soilVisual === 'healthy'
+  const soilName = advice?.soilName ?? getSoil(zone.soilId).name
+  const stageName = advice?.growthStageName ?? growthStageName(zone)
 
   return (
     <Card className="gap-3">
@@ -50,7 +77,10 @@ function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
             {zone.name}
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {zone.crop.name} · {formatIrrigationPreference(zone.irrigationPreference)}
+            Crop: {zone.crop.name} · Soil: {soilName} · Growth stage: {stageName}
+          </p>
+          <p className="text-[11px] text-muted-foreground/70">
+            {formatIrrigationPreference(zone.irrigationPreference)}
           </p>
         </div>
         <StatusBadge tone={zone.state.active ? 'info' : inRange ? 'good' : 'warning'}>
@@ -63,6 +93,21 @@ function ZoneCard({ zone, pending, actionError, onToggle }: ZoneCardProps) {
           headline={soilVisualHeadline(soilVisual)}
           detail={soilVisualDetail(soilVisual)}
         />
+        {advice ? (
+          <div className="flex flex-col gap-1.5 rounded-lg border border-border bg-muted/40 px-3 py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">Irrigation status</span>
+              <StatusBadge tone={adviceTone(advice.status)}>
+                {formatIrrigationAdviceStatus(advice.status)}
+              </StatusBadge>
+            </div>
+            <p className="text-sm text-foreground">{advice.reason}</p>
+            <p className="text-[11px] text-muted-foreground/70">
+              About {formatLiters(advice.estimatedNeedL)} needed to refill · tank has{' '}
+              {formatLiters(advice.availableTankL)} · {formatNextCheckHours(advice.nextCheckHours)}
+            </p>
+          </div>
+        ) : null}
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span className="flex items-center gap-1.5">
             How wet
@@ -122,16 +167,23 @@ export function IrrigationPage() {
   const zonesPolling = usePolling(api.getZones)
   const waterPolling = usePolling(api.getWater)
   const systemPolling = usePolling(api.getSystem)
+  const advicePolling = usePolling(api.getIrrigationAdvice)
   const { data: zones } = zonesPolling
   const { data: water } = waterPolling
   const { data: system } = systemPolling
+  const { data: advice } = advicePolling
 
   const [zoneActions, setZoneActions] = useState<Record<string, ActionState>>({})
   const [pumpAction, setPumpAction] = useState<ActionState>(IDLE)
   const [modeAction, setModeAction] = useState<ActionState>(IDLE)
 
   async function refreshAll() {
-    await Promise.all([zonesPolling.refetch(), systemPolling.refetch(), waterPolling.refetch()])
+    await Promise.all([
+      zonesPolling.refetch(),
+      systemPolling.refetch(),
+      waterPolling.refetch(),
+      advicePolling.refetch(),
+    ])
   }
 
   async function handleZoneToggle(zone: IrrigationZone) {
@@ -338,7 +390,7 @@ export function IrrigationPage() {
       <SectionCard
         icon={<Sprout className="h-4 w-4" />}
         title="Fields"
-        description="Each field is set up on its own."
+        description="Each field is set up on its own. Watering advice uses crop, soil, growth stage, weather, and the main tank."
         action={
           <Button size="sm" variant="outline" disabled title="Zone management is not yet implemented">
             <Plus className="h-4 w-4" /> Add zone
@@ -350,6 +402,7 @@ export function IrrigationPage() {
             <ZoneCard
               key={zone.id}
               zone={zone}
+              advice={advice?.zones.find((item) => item.zoneId === zone.id)}
               pending={zoneActions[zone.id]?.pending ?? false}
               actionError={zoneActions[zone.id]?.error}
               onToggle={handleZoneToggle}

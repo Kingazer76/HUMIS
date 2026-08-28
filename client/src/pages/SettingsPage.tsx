@@ -102,7 +102,7 @@ export function SettingsPage() {
 
       <SectionCard icon={<Sprout className="h-4 w-4" />} title="Irrigation zone configuration">
         {data ? (
-          <ZoneSettingsList zones={data.zones} crops={data.crops} onSaved={load} />
+          <ZoneSettingsList zones={data.zones} crops={data.crops} soils={data.soils} onSaved={load} />
         ) : (
           <div className="flex flex-col divide-y divide-border">
             {['Zone A — North Field', 'Zone B — South Field'].map((zone) => (

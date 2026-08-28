@@ -1,10 +1,11 @@
 import type {
-  CropProfile,
   FarmLocation,
   IrrigationZoneConfig,
   TankConfig,
   WaterSourceConfig,
 } from '@aquaflow/shared'
+
+export { CROP_PROFILES } from '../agronomy/cropCatalog.js'
 
 /**
  * Prototype seed data. Numbers loosely mirror the V1 prototype's own demo
@@ -79,11 +80,6 @@ export const INITIAL_SOURCE_STATE: Record<string, { currentL: number; active: bo
   'manual-supply': { currentL: 1000, active: false },
 }
 
-export const CROP_PROFILES: CropProfile[] = [
-  { id: 'maize', name: 'Maize', defaultMinMoisturePct: 40, defaultMaxMoisturePct: 60, priority: 'medium' },
-  { id: 'tomato', name: 'Tomato', defaultMinMoisturePct: 50, defaultMaxMoisturePct: 70, priority: 'high' },
-]
-
 export const IRRIGATION_ZONE_CONFIGS: IrrigationZoneConfig[] = [
   {
     id: 'zone-a',
@@ -92,6 +88,8 @@ export const IRRIGATION_ZONE_CONFIGS: IrrigationZoneConfig[] = [
     sensorMode: 'default',
     irrigationPreference: 'standard',
     nominalOutflowRateLPerMin: 5,
+    soilId: 'loam',
+    growthStageId: 'mid',
   },
   {
     id: 'zone-b',
@@ -100,6 +98,8 @@ export const IRRIGATION_ZONE_CONFIGS: IrrigationZoneConfig[] = [
     sensorMode: 'default',
     irrigationPreference: 'standard',
     nominalOutflowRateLPerMin: 4,
+    soilId: 'loam',
+    growthStageId: 'mid',
   },
 ]
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CROP_PROFILES, IRRIGATION_ZONE_CONFIGS } from './seedData.js'
 import { applyZoneSettingsPatch } from './zoneSettings.js'
+import type { SoilId } from '@aquaflow/shared'
 
 const zoneA = { ...IRRIGATION_ZONE_CONFIGS[0]! }
 
@@ -22,8 +23,28 @@ describe('applyZoneSettingsPatch', () => {
   })
 
   it('rejects an unknown crop', () => {
-    const result = applyZoneSettingsPatch(zoneA, { cropId: 'cassava' })
+    const result = applyZoneSettingsPatch(zoneA, { cropId: 'not-a-real-crop' })
     expect(result.ok).toBe(false)
+  })
+
+  it('saves soil type and growth stage', () => {
+    const result = applyZoneSettingsPatch(zoneA, { soilId: 'sandy-loam', growthStageId: 'initial' })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.config.soilId).toBe('sandy-loam')
+    expect(result.config.growthStageId).toBe('initial')
+  })
+
+  it('rejects an unknown soil type', () => {
+    const result = applyZoneSettingsPatch(zoneA, { soilId: 'peat' as SoilId })
+    expect(result.ok).toBe(false)
+  })
+
+  it('falls back to mid-season when the growth stage is not on the crop', () => {
+    const result = applyZoneSettingsPatch(zoneA, { cropId: 'tomato', growthStageId: 'not-a-stage' })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.config.growthStageId).toBe('mid')
   })
 
   it('saves a watering style', () => {

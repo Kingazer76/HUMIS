@@ -30,7 +30,19 @@ describe('GET/PUT /api/settings', () => {
     })
     expect(Array.isArray(res.body.zones)).toBe(true)
     expect(res.body.zones.length).toBe(2)
-    expect(res.body.crops.map((c: { id: string }) => c.id)).toEqual(['maize', 'tomato'])
+    const cropIds = (res.body.crops as { id: string }[]).map((c) => c.id)
+    expect(cropIds).toContain('maize')
+    expect(cropIds).toContain('tomato')
+    expect(cropIds.length).toBeGreaterThanOrEqual(50)
+    expect(Array.isArray(res.body.soils)).toBe(true)
+    expect(res.body.soils.map((s: { id: string }) => s.id)).toEqual([
+      'sand',
+      'sandy-loam',
+      'loam',
+      'silt-loam',
+      'clay-loam',
+      'clay',
+    ])
   })
 
   it('changing tank capacity changes tank percentage on GET /api/water', async () => {

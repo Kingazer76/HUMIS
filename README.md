@@ -25,10 +25,24 @@ listen with the microphone, and read new answers out loud when Khaya AI is confi
 
 ## Why a flow-sensor disclaimer matters
 
-AquaFlow's target hardware has a tank-level sensor but **no flow sensor**. That means "water
-in" and "water used" can never be physically measured — only estimated. Every screen in this
-app is built to say so explicitly (e.g. "(estimated)", "(simulated)", "(forecast)") rather than
-presenting an estimate as if it were a real sensor reading.
+AquaFlow tracks two flow figures — **Water IN** and **Water USED** — from configured
+rates in simulation (`configured-rate`). Real flow meters are not connected yet.
+Every screen is built to say so explicitly (e.g. "(estimated)", "(simulated)",
+"(forecast)") rather than presenting an estimate as if it were a real sensor reading.
+Irrigation advice estimates how many litres a field needs; that estimate can later
+be checked against Water USED. AquaFlow does not add a third flow channel.
+
+## Irrigation decisions
+
+Automatic watering uses crop type, soil type, growth stage, current soil moisture,
+weather/rainfall, and main-tank water. It does not use one farm-wide moisture number
+such as "water if below 35%." Crop coefficients (`Kc`) and allowable depletion (`p`)
+come from FAO-56 where the crop (or a named analog) is listed. Soil water limits
+come from FAO-56 Table 19. Mapping the 0–100 simulated soil probe onto those volumes
+is an AquaFlow assumption, not a laboratory calibration.
+
+The same `decideZoneIrrigation` function drives Auto mode and the Irrigation /
+Planning advice text. Pump and valves still change only through `safetyController`.
 
 ## Stack
 

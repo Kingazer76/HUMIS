@@ -69,12 +69,39 @@ export type WaterSource = WaterSourceConfig & { state: WaterSourceState }
 
 export type IrrigationPriority = 'low' | 'medium' | 'high'
 
+export type {
+  AgronomySource,
+  CropCategory,
+  CropGrowthStage,
+  DroughtSensitivity,
+  SoilId,
+  SoilType,
+} from './agronomy.js'
+export {
+  SOIL_CATALOG,
+  agronomicSensorBand,
+  getSoil,
+  sensorPctToVwc,
+  vwcToSensorPct,
+} from './agronomy.js'
+
+import { agronomicSensorBand, getSoil, type AgronomySource, type CropGrowthStage, type CropCategory, type DroughtSensitivity, type SoilId, type SoilType } from './agronomy.js'
+
 export interface CropProfile {
   id: string
   name: string
   defaultMinMoisturePct: number
   defaultMaxMoisturePct: number
   priority: IrrigationPriority
+  category?: CropCategory
+  stages?: CropGrowthStage[]
+  rootingDepthM?: { min: number; max: number; source: AgronomySource }
+  depletionFractionP?: { value: number; source: AgronomySource }
+  droughtSensitivity?: DroughtSensitivity
+  preferredMoisture?: string
+  irrigationNotes?: string
+  sources?: string[]
+  assumptions?: string[]
 }
 
 export type SoilMoistureSensorMode = 'default' | 'custom'
@@ -91,21 +118,50 @@ export interface IrrigationZoneConfig {
   overrideMaxPct?: number
   /** Nominal outflow-from-tank rate (L/min) while this zone is actively irrigating. */
   nominalOutflowRateLPerMin: number
+  /** Soil on this field. Used to interpret the soil-moisture sensor. */
+  soilId?: SoilId
+  /** Current crop growth stage id from the crop's `stages` list. */
+  growthStageId?: string
 }
 
 /**
- * Effective soil-moisture start/stop band for a zone: crop defaults, then
- * optional overrides, then the watering-style shift (save water / extra).
- * Used by the irrigation engine and by the Irrigation tab so both agree.
+ * Effective soil-moisture start/stop band for a zone.
+ * When the crop has FAO-style Kc/p numbers and the field has a soil type,
+ * the band is derived from crop + soil + growth stage. Manual overrides
+ * still win. Watering style (save water / extra) still shifts the band.
  */
 export function moistureTargetsForZone(zone: {
   irrigationPreference: IrrigationPreference
   overrideMinPct?: number
   overrideMaxPct?: number
-  crop: Pick<CropProfile, 'defaultMinMoisturePct' | 'defaultMaxMoisturePct'>
+  soilId?: SoilId
+  growthStageId?: string
+  crop: Pick<
+    CropProfile,
+    'defaultMinMoisturePct' | 'defaultMaxMoisturePct' | 'depletionFractionP' | 'stages' | 'droughtSensitivity'
+  >
 }): { minPct: number; maxPct: number } {
-  const baseMin = zone.overrideMinPct ?? zone.crop.defaultMinMoisturePct
-  const baseMax = zone.overrideMaxPct ?? zone.crop.defaultMaxMoisturePct
+  let baseMin = zone.overrideMinPct ?? zone.crop.defaultMinMoisturePct
+  let baseMax = zone.overrideMaxPct ?? zone.crop.defaultMaxMoisturePct
+  if (
+    zone.overrideMinPct === undefined &&
+    zone.overrideMaxPct === undefined &&
+    zone.crop.depletionFractionP &&
+    zone.crop.stages &&
+    zone.crop.stages.length > 0
+  ) {
+    const band = agronomicSensorBand(
+      {
+        depletionFractionP: zone.crop.depletionFractionP,
+        stages: zone.crop.stages,
+        droughtSensitivity: zone.crop.droughtSensitivity,
+      },
+      getSoil(zone.soilId),
+      zone.growthStageId,
+    )
+    baseMin = band.minPct
+    baseMax = band.maxPct
+  }
   let minPct = baseMin
   let maxPct = baseMax
   if (zone.irrigationPreference === 'water-saving') {
@@ -208,6 +264,38 @@ export interface IrrigationActionResult {
   zone?: IrrigationZone
 }
 
+export type IrrigationAdviceStatus =
+  | 'no-irrigation-needed'
+  | 'monitor'
+  | 'irrigation-recommended'
+  | 'irrigation-urgent'
+  | 'irrigation-limited-by-water'
+
+export interface ZoneIrrigationAdvice {
+  zoneId: string
+  zoneName: string
+  status: IrrigationAdviceStatus
+  reason: string
+  cropName: string
+  soilName: string
+  growthStageName: string
+  moisturePct: number
+  triggerPct: number
+  stopPct: number
+  kc: number
+  estimatedNeedL: number
+  estimatedDurationMin: number
+  availableTankL: number
+  nextCheckHours: number
+  weatherApplied: boolean
+  /** Same two flow channels as Water IN / Water USED. Not a new sensor. */
+  flowInputSource: FlowInputSource
+}
+
+export interface IrrigationAdviceSnapshot {
+  zones: ZoneIrrigationAdvice[]
+}
+
 export type ShortageTier = 'low' | 'moderate' | 'high' | 'critical'
 
 /** One day in the weather forecast shown on Planning. */
@@ -305,6 +393,7 @@ export interface SettingsSnapshot {
   locationDefaults: FarmLocation
   zones: IrrigationZone[]
   crops: CropProfile[]
+  soils: SoilType[]
 }
 
 /**
@@ -340,4 +429,4 @@ export interface TextToSpeechErrorResponse {
   reason: string
 }
 
-export const AQUAFLOW_SHARED_VERSION = '0.7.1'
+export const AQUAFLOW_SHARED_VERSION = '0.8.0'

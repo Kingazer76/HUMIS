@@ -1,5 +1,6 @@
 import { getTankConfig } from '../config/farmSettings.js'
 import { AUTO_IRRIGATION_INTERVAL_MS } from '../env.js'
+import { getForecastSafely } from '../forecast/weatherProvider.js'
 import { deviceProvider } from '../providers/index.js'
 import { decideZoneIrrigation } from './irrigationEngine.js'
 import { safetyController } from './safetyController.js'
@@ -18,7 +19,12 @@ export async function runAutoIrrigationCycle(): Promise<void> {
   const mode = await deviceProvider.getOperationMode()
   if (mode !== 'auto') return
 
-  const [tank, zones] = await Promise.all([deviceProvider.getTankLevel(), deviceProvider.getZones()])
+  const [tank, zones, rain] = await Promise.all([
+    deviceProvider.getTankLevel(),
+    deviceProvider.getZones(),
+    deviceProvider.getRainStatus(),
+  ])
+  const forecast = await getForecastSafely()
   const tankConfig = getTankConfig()
   const tankLevelPct = (tank.levelL.value / tankConfig.capacityL) * 100
 
@@ -27,6 +33,17 @@ export async function runAutoIrrigationCycle(): Promise<void> {
       zone,
       tankLevelPct,
       criticalThresholdPct: tankConfig.criticalThresholdPct,
+      availableTankL: tank.levelL.value,
+      isRaining: rain.isRaining.value,
+      forecast: forecast
+        ? {
+            expectedRainfallMm: forecast.expectedRainfallMm,
+            precipitationProbabilityPct: forecast.precipitationProbabilityPct ?? 0,
+            condition: forecast.condition,
+            temperatureC: forecast.temperatureC,
+            recentRainfallMm: forecast.precipitationMm ?? 0,
+          }
+        : undefined,
     })
     if (decision.action === 'start' && !zone.state.active) {
       await safetyController.setZoneActive(zone.id, true, 'auto')

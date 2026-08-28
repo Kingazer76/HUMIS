@@ -1,8 +1,10 @@
-import type { CropProfile, IrrigationPreference, IrrigationZoneConfig, SoilMoistureSensorMode } from '@aquaflow/shared'
+import type { CropProfile, IrrigationPreference, IrrigationZoneConfig, SoilId, SoilMoistureSensorMode } from '@aquaflow/shared'
+import { SOIL_CATALOG } from '@aquaflow/shared'
 import { CROP_PROFILES } from './seedData.js'
 
 const PREFERENCES: IrrigationPreference[] = ['standard', 'water-saving', 'aggressive']
 const SENSOR_MODES: SoilMoistureSensorMode[] = ['default', 'custom']
+const SOIL_IDS = new Set(SOIL_CATALOG.map((s) => s.id))
 
 export interface ZoneSettingsInput {
   name: string
@@ -11,6 +13,8 @@ export interface ZoneSettingsInput {
   sensorMode?: SoilMoistureSensorMode
   overrideMinPct?: number | null
   overrideMaxPct?: number | null
+  soilId?: SoilId
+  growthStageId?: string
 }
 
 export type ZoneSettingsResult =
@@ -72,6 +76,23 @@ export function applyZoneSettingsPatch(
     cropId,
     irrigationPreference,
     sensorMode,
+  }
+
+  if (input.soilId !== undefined) {
+    if (!SOIL_IDS.has(input.soilId)) {
+      return { ok: false, reason: 'Please choose a soil type this farm knows.' }
+    }
+    config.soilId = input.soilId
+  }
+
+  if (input.growthStageId !== undefined || input.cropId !== undefined) {
+    const stageId = input.growthStageId ?? current.growthStageId ?? 'mid'
+    const stageOk = crop.stages?.some((s) => s.id === stageId)
+    if (crop.stages && crop.stages.length > 0 && !stageOk) {
+      config.growthStageId = 'mid'
+    } else {
+      config.growthStageId = stageId
+    }
   }
   if (minResult.value === undefined) delete config.overrideMinPct
   else config.overrideMinPct = minResult.value
