@@ -108,7 +108,10 @@ export function decideZoneIrrigation(input: ZoneDecisionInput): ZoneDecision {
   const soil = getSoil(zone.soilId)
   const plotAreaM2 = Math.max(10, input.plotAreaM2 ?? DEFAULT_PLOT_AREA_M2)
   const availableTankL = Math.max(0, input.availableTankL ?? Number.POSITIVE_INFINITY)
-  const needL = estimatedRefillL(zone, moisture, maxPct, plotAreaM2)
+  const refillL = estimatedRefillL(zone, moisture, maxPct, plotAreaM2)
+  const belowMin = moisture <= minPct
+  const atOrAboveMax = moisture >= maxPct
+  const needL = belowMin || active ? refillL : 0
   const durationMin =
     zone.nominalOutflowRateLPerMin > 0 ? needL / zone.nominalOutflowRateLPerMin : 0
 
@@ -122,9 +125,6 @@ export function decideZoneIrrigation(input: ZoneDecisionInput): ZoneDecision {
   const hotDry = forecast?.condition === 'hot-dry' || (forecast?.temperatureC !== undefined && forecast.temperatureC >= 32)
   const rainingNow = input.isRaining === true
   const urgentDry = moisture <= minPct - 8
-  const belowMin = moisture <= minPct
-  const atOrAboveMax = moisture >= maxPct
-
   const limited = Number.isFinite(availableTankL) && availableTankL < Math.min(needL, 20) && belowMin && !active
 
   const finish = (

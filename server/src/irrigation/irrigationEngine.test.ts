@@ -55,6 +55,7 @@ describe('decideZoneIrrigation', () => {
   it('holds an inactive zone whose moisture is within the target range', () => {
     const decision = decideZoneIrrigation({ zone: zone(50, false), ...HEALTHY_TANK })
     expect(decision.action).toBe('hold')
+    expect(decision.estimatedNeedL).toBe(0)
   })
 
   it('holds an active zone until moisture reaches the target maximum', () => {
