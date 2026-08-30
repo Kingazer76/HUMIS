@@ -1,7 +1,8 @@
 import { AssistantChat } from '@/components/assistant/AssistantChat'
 
 /**
- * App header: AquaFlow logo, name, tagline, and the Assistant chat button.
+ * App header: hexagon mark, HUMIS wordmark from the original logo art,
+ * and the Assistant chat button. No tagline.
  */
 export function AppHeader() {
   return (
@@ -12,12 +13,14 @@ export function AppHeader() {
           alt=""
           className="h-12 w-12 shrink-0 bg-transparent object-contain sm:h-14 sm:w-14"
         />
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold leading-tight tracking-tight text-foreground">
-            AquaFlow
-          </h1>
-          <p className="text-sm leading-tight text-muted-foreground">Smart Water Management</p>
-        </div>
+        <h1 className="m-0 min-w-0">
+          <span className="sr-only">HUMIS</span>
+          <img
+            src="/humis-wordmark.png"
+            alt=""
+            className="h-7 w-auto max-w-full bg-transparent object-contain sm:h-8"
+          />
+        </h1>
       </div>
 
       <AssistantChat />
