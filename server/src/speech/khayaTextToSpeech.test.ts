@@ -62,4 +62,14 @@ describe('KhayaTextToSpeechProvider', () => {
     expect(result.ok).toBe(false)
     expect(fetchMock).not.toHaveBeenCalled()
   })
+
+  it('asks the farmer to check the internet when Khaya cannot be reached', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')))
+    const provider = new KhayaTextToSpeechProvider({ key: 'test-key' })
+    const result = await provider.speak('Water level is good.')
+    expect(result.ok).toBe(false)
+    expect(result.audio).toBeUndefined()
+    expect(result.reason).toMatch(/internet/i)
+    expect(result.reason).not.toMatch(/tts|khaya|http/i)
+  })
 })

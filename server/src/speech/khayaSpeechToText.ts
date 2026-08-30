@@ -1,14 +1,17 @@
-import type { SpeechToTextResponse } from '@aquaflow/shared'
+import {
+  resolveKhayaLanguage,
+  VOICE_MESSAGES,
+  type SpeechToTextResponse,
+} from '@aquaflow/shared'
 import type { SpeechToTextProvider } from './speechToTextProvider.js'
 
-const RETRY = "I didn't catch that. Tap the microphone and try again."
 const DEFAULT_URL = 'https://translation-api.ghananlp.org/asr/v3/transcribe'
-const DEFAULT_LANGUAGE = 'eng'
 
 /**
  * Khaya AI Automatic Speech Recognition (ASR v3).
- * Keys stay on the server. Ghanaian-language switching is Phase 8C —
- * Phase 8A listens in African English (`eng`).
+ * Keys stay on the server. This layer only turns audio into text.
+ * Ghanaian-language switching is not enabled yet — African English (`eng`)
+ * is the live language.
  */
 export class KhayaSpeechToTextProvider implements SpeechToTextProvider {
   constructor(
@@ -21,10 +24,10 @@ export class KhayaSpeechToTextProvider implements SpeechToTextProvider {
 
   async transcribe(audio: Buffer, contentType: string): Promise<SpeechToTextResponse> {
     if (audio.byteLength < 100) {
-      return { ok: false, reason: RETRY }
+      return { ok: false, reason: VOICE_MESSAGES.couldNotHear }
     }
 
-    const language = this.options.language?.trim() || DEFAULT_LANGUAGE
+    const language = resolveKhayaLanguage(this.options.language)
     const url = new URL(this.options.transcribeUrl?.trim() || DEFAULT_URL)
     url.searchParams.set('language', language)
 
@@ -40,16 +43,16 @@ export class KhayaSpeechToTextProvider implements SpeechToTextProvider {
       })
 
       if (!res.ok) {
-        return { ok: false, reason: RETRY }
+        return { ok: false, reason: VOICE_MESSAGES.couldNotUnderstand }
       }
 
       const text = extractTranscript(await res.json())
       if (!text) {
-        return { ok: false, reason: RETRY }
+        return { ok: false, reason: VOICE_MESSAGES.couldNotUnderstand }
       }
       return { ok: true, text }
     } catch {
-      return { ok: false, reason: RETRY }
+      return { ok: false, reason: VOICE_MESSAGES.noInternet }
     }
   }
 }

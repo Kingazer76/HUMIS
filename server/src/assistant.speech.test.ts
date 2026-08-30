@@ -80,7 +80,8 @@ describe('POST /api/assistant/speech', () => {
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(false)
     expect(res.body.text).toBeUndefined()
-    expect(res.body.reason).toMatch(/KHAYA_API_KEY/)
+    expect(res.body.reason).toMatch(/type your question/i)
+    expect(res.body.reason).not.toMatch(/KHAYA_API_KEY|asr|http/i)
   })
 
   it('reads KHAYA_API_KEY from the server environment and calls Khaya ASR', async () => {

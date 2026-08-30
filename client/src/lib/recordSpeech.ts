@@ -1,5 +1,13 @@
+import { VOICE_MESSAGES } from '@aquaflow/shared'
+
 const TARGET_RATE = 16000
 const MAX_MS = 12_000
+/** WAV header plus about one third of a second of 16 kHz 16-bit audio. */
+export const MIN_WAV_BYTES = 44 + Math.floor(TARGET_RATE * 0.35) * 2
+
+export function wavBlobIsTooShort(blob: Blob): boolean {
+  return blob.size < MIN_WAV_BYTES
+}
 
 function mergeFloat32(chunks: Float32Array[]): Float32Array {
   const length = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
@@ -24,7 +32,7 @@ function downsample(input: Float32Array, inputRate: number, outputRate: number):
   return output
 }
 
-function encodeWav(samples: Float32Array, sampleRate: number): Blob {
+export function encodeWav(samples: Float32Array, sampleRate: number): Blob {
   const bytesPerSample = 2
   const buffer = new ArrayBuffer(44 + samples.length * bytesPerSample)
   const view = new DataView(buffer)
@@ -63,11 +71,14 @@ export interface SpeechRecorder {
 
 /**
  * Records microphone audio as 16 kHz WAV for Khaya ASR.
- * Hold-to-talk is not required: tap to start, tap again to stop.
+ * Tap to start, tap again to stop. After 12 seconds it stops on its own
+ * so the Assistant cannot stay stuck on "Listening".
  */
-export async function startSpeechRecording(): Promise<SpeechRecorder> {
+export async function startSpeechRecording(options?: {
+  onAutoStop?: () => void
+}): Promise<SpeechRecorder> {
   if (!navigator.mediaDevices?.getUserMedia) {
-    throw new Error('This browser cannot use the microphone.')
+    throw new Error(VOICE_MESSAGES.micUnsupported)
   }
 
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -90,10 +101,12 @@ export async function startSpeechRecording(): Promise<SpeechRecorder> {
   const inputRate = context.sampleRate || TARGET_RATE
   let finished: Promise<Blob> | undefined
   let stopped = false
+  let timeoutId = 0
 
   async function stop() {
     if (finished) return finished
     stopped = true
+    window.clearTimeout(timeoutId)
     finished = (async () => {
       processor.disconnect()
       source.disconnect()
@@ -107,8 +120,9 @@ export async function startSpeechRecording(): Promise<SpeechRecorder> {
     return finished
   }
 
-  window.setTimeout(() => {
-    if (!stopped) void stop()
+  timeoutId = window.setTimeout(() => {
+    if (stopped) return
+    void stop().then(() => options?.onAutoStop?.())
   }, MAX_MS)
 
   return { stop }

@@ -6,6 +6,7 @@ describe('UnavailableSpeechToTextProvider', () => {
     const result = await new UnavailableSpeechToTextProvider().transcribe(Buffer.alloc(500), 'audio/wav')
     expect(result.ok).toBe(false)
     expect(result.text).toBeUndefined()
-    expect(result.reason).toMatch(/KHAYA_API_KEY/)
+    expect(result.reason).toMatch(/type your question/i)
+    expect(result.reason).not.toMatch(/KHAYA_API_KEY|asr|http/i)
   })
 })

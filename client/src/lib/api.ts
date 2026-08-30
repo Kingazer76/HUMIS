@@ -16,6 +16,8 @@ import type {
   WaterSource,
   TextToSpeechErrorResponse,
 } from '@aquaflow/shared'
+import { toFarmerVoiceMessage, VOICE_MESSAGES } from '@aquaflow/shared'
+import { isNetworkFailure } from './voiceErrors'
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(path)
@@ -92,33 +94,73 @@ export const api = {
     postJson<IrrigationActionResult>('/api/irrigation/mode', { mode }),
   sendAssistantMessage: (message: string) =>
     postJson<AssistantChatResponse>('/api/assistant/chat', { message }),
-  transcribeSpeech: async (audio: Blob): Promise<SpeechToTextResponse> => {
-    const res = await fetch('/api/assistant/speech', {
-      method: 'POST',
-      headers: { 'Content-Type': audio.type || 'audio/wav' },
-      body: audio,
-    })
-    if (!res.ok) throw new Error(`/api/assistant/speech responded with ${res.status}`)
-    return (await res.json()) as SpeechToTextResponse
+  transcribeSpeech: async (audio: Blob, signal?: AbortSignal): Promise<SpeechToTextResponse> => {
+    try {
+      const res = await fetch('/api/assistant/speech', {
+        method: 'POST',
+        headers: { 'Content-Type': audio.type || 'audio/wav' },
+        body: audio,
+        signal,
+      })
+      let body: SpeechToTextResponse | undefined
+      try {
+        body = (await res.json()) as SpeechToTextResponse
+      } catch {
+        return { ok: false, reason: VOICE_MESSAGES.generic }
+      }
+      if (!body || typeof body !== 'object') {
+        return { ok: false, reason: VOICE_MESSAGES.generic }
+      }
+      if (!res.ok || !body.ok) {
+        return {
+          ok: false,
+          reason: toFarmerVoiceMessage(body.reason, VOICE_MESSAGES.couldNotUnderstand),
+        }
+      }
+      const text = typeof body.text === 'string' ? body.text.trim() : ''
+      if (!text) {
+        return { ok: false, reason: VOICE_MESSAGES.couldNotUnderstand }
+      }
+      return { ok: true, text }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') throw err
+      if (isNetworkFailure(err)) {
+        return { ok: false, reason: VOICE_MESSAGES.noInternet }
+      }
+      return { ok: false, reason: VOICE_MESSAGES.generic }
+    }
   },
   speakAssistantReply: async (text: string, signal?: AbortSignal): Promise<Blob> => {
-    const res = await fetch('/api/assistant/speak', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-      signal,
-    })
-    const type = res.headers.get('content-type') ?? ''
-    if (type.includes('audio')) {
-      return await res.blob()
-    }
-    let reason = "Couldn't speak that. The written answer is still on screen."
     try {
-      const body = (await res.json()) as TextToSpeechErrorResponse
-      if (body.reason) reason = body.reason
-    } catch {
-      // Keep the default farmer message.
+      const res = await fetch('/api/assistant/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+        signal,
+      })
+      const type = res.headers.get('content-type') ?? ''
+      if (res.ok && type.includes('audio')) {
+        const blob = await res.blob()
+        if (blob.size < 12) throw new Error(VOICE_MESSAGES.speakFailed)
+        return blob
+      }
+      let reason = VOICE_MESSAGES.speakFailed
+      if (type.includes('json')) {
+        try {
+          const body = (await res.json()) as TextToSpeechErrorResponse
+          reason = toFarmerVoiceMessage(body.reason, VOICE_MESSAGES.speakFailed)
+        } catch {
+          // Keep the default farmer message.
+        }
+      }
+      throw new Error(reason)
+    } catch (err) {
+      if (signal?.aborted || (err instanceof Error && err.name === 'AbortError')) throw err
+      if (isNetworkFailure(err)) throw new Error(VOICE_MESSAGES.noInternet)
+      if (err instanceof Error && err.message.trim()) {
+        throw new Error(toFarmerVoiceMessage(err.message, VOICE_MESSAGES.speakFailed))
+      }
+      throw new Error(VOICE_MESSAGES.speakFailed)
     }
-    throw new Error(reason)
   },
 }

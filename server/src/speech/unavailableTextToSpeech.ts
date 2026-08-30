@@ -1,3 +1,4 @@
+import { VOICE_MESSAGES } from '@aquaflow/shared'
 import type { TextToSpeechProvider, TextToSpeechResult } from './textToSpeechProvider.js'
 
 /**
@@ -8,8 +9,7 @@ export class UnavailableTextToSpeechProvider implements TextToSpeechProvider {
   async speak(_text: string): Promise<TextToSpeechResult> {
     return {
       ok: false,
-      reason:
-        "Couldn't speak that. Add KHAYA_API_KEY on the server. The written answer is still on screen.",
+      reason: VOICE_MESSAGES.speakFailed,
     }
   }
 }

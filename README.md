@@ -84,9 +84,13 @@ KHAYA_TTS_LANGUAGE=eng
 ```
 
 `KHAYA_API_KEY` stays on the server. Restart `npm run dev` after editing `.env`. If the key
-is missing, the microphone still opens and chat still shows the written answer, but AquaFlow
-asks you to set the key up instead of guessing speech or inventing audio. Ghanaian-language
-switching is Phase 8C.
+is missing, typed chat still works. The microphone may still open, but AquaFlow will not
+guess speech or invent audio — it asks you to type instead. Voice needs an internet
+connection to Khaya; the rest of AquaFlow keeps working if Khaya is unreachable.
+
+The microphone shows: **Tap to speak**, **Listening**, **Understanding**, then **Speaking**.
+Recognized speech appears in the chat as your message, then the same AquaFlow Assistant
+answers it. Ghanaian-language switching is Phase 8C. Only African English (`eng`) is active.
 
 You can also run each side on its own:
 
@@ -138,6 +142,8 @@ Extra rain is overflow and is not stored. Rainwater is not a separate reserve.
       (`eng`) turns talk into text, then the same Phase 7 `/api/assistant/chat` path.
 - [x] **Phase 8B** — Assistant speaks new replies with Khaya AI TTS (`eng`). Written
       answers stay on screen. No Ghanaian-language switching yet.
+- [x] **Khaya voice layer** — microphone states, farmer-friendly voice errors, language
+      catalog for later Ghanaian languages, and recording/playback that cannot stay stuck.
 - [ ] **Phase 8C** — Ghanaian-language support (translation).
 - [ ] **Phase 9 (deferred)** — real ESP32 hardware integration. Not started; `USE_SIMULATED`
       stays `true` until this is explicitly requested.

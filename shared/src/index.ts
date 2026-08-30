@@ -429,4 +429,15 @@ export interface TextToSpeechErrorResponse {
   reason: string
 }
 
+export {
+  DEFAULT_KHAYA_LANGUAGE,
+  KHAYA_LANGUAGE_CATALOG,
+  VOICE_MESSAGES,
+  activeKhayaLanguage,
+  isRegisteredKhayaLanguage,
+  resolveKhayaLanguage,
+  toFarmerVoiceMessage,
+} from './speech.js'
+export type { KhayaLanguageCode } from './speech.js'
+
 export const AQUAFLOW_SHARED_VERSION = '0.8.0'

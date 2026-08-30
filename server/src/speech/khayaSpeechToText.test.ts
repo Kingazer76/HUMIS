@@ -67,6 +67,30 @@ describe('KhayaSpeechToTextProvider', () => {
     const result = await provider.transcribe(Buffer.alloc(10), 'audio/wav')
     expect(result.ok).toBe(false)
     expect(result.text).toBeUndefined()
+    expect(result.reason).toMatch(/couldn['’]t hear/i)
+    expect(result.reason).not.toMatch(/asr|http|khaya/i)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('asks the farmer to check the internet when Khaya cannot be reached', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('fetch failed')))
+    const provider = new KhayaSpeechToTextProvider({ key: 'test-key' })
+    const result = await provider.transcribe(wav, 'audio/wav')
+    expect(result.ok).toBe(false)
+    expect(result.text).toBeUndefined()
+    expect(result.reason).toMatch(/internet/i)
+    expect(result.reason).not.toMatch(/asr|khaya|http/i)
+  })
+
+  it('listens in African English by default so a later language can be added later', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ text: 'How much water is left?' }),
+      }),
+    )
+    await new KhayaSpeechToTextProvider({ key: 'test-key', language: '  ' }).transcribe(wav, 'audio/wav')
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('language=eng')
   })
 })

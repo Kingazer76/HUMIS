@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { VOICE_MESSAGES, toFarmerVoiceMessage } from '@aquaflow/shared'
 import { MessageCircle, Mic, Send } from '@/lib/icons'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,7 +13,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api'
 import { createSpeechPlayback } from '@/lib/playSpeech'
-import { startSpeechRecording, type SpeechRecorder } from '@/lib/recordSpeech'
+import { startSpeechRecording, wavBlobIsTooShort, type SpeechRecorder } from '@/lib/recordSpeech'
+import {
+  isNetworkFailure,
+  microphoneErrorMessage,
+  speakErrorMessage,
+  voiceStatusLabel,
+} from '@/lib/voiceErrors'
 import { cn } from '@/lib/utils'
 
 interface ChatMessage {
@@ -28,12 +35,11 @@ const SUGGESTIONS = [
   'Stop watering',
 ]
 
-const RETRY = "I didn't catch that. Tap the microphone and try again."
-const SPEAK_RETRY = "Couldn't speak that. The written answer is still on screen."
+const TRANSCRIBE_MS = 30_000
 
 /**
  * Header chat for the AquaFlow Assistant. Typed messages and recognized
- * speech both go to `/api/assistant/chat` — the same Phase 7 path.
+ * speech both go to `/api/assistant/chat` — the same farm-brain path.
  * New assistant replies are then spoken through `/api/assistant/speak`.
  */
 export function AssistantChat() {
@@ -41,6 +47,7 @@ export function AssistantChat() {
   const [draft, setDraft] = useState('')
   const [pending, setPending] = useState(false)
   const [listening, setListening] = useState(false)
+  const [understanding, setUnderstanding] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [speakError, setSpeakError] = useState<string | undefined>()
@@ -49,17 +56,26 @@ export function AssistantChat() {
   const nextId = useRef(1)
   const recorderRef = useRef<SpeechRecorder | null>(null)
   const finishingRef = useRef(false)
+  const openRef = useRef(false)
+  const listenGen = useRef(0)
   const playbackRef = useRef(createSpeechPlayback())
   const speakGen = useRef(0)
   const speakAbortRef = useRef<AbortController | null>(null)
+  const transcribeAbortRef = useRef<AbortController | null>(null)
   const [lastReply, setLastReply] = useState<string | undefined>()
 
   useEffect(() => {
+    openRef.current = open
+  }, [open])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' })
-  }, [messages, pending, listening, speaking])
+  }, [messages, pending, listening, understanding, speaking])
 
   useEffect(() => {
     return () => {
+      listenGen.current += 1
+      transcribeAbortRef.current?.abort()
       void recorderRef.current?.stop()
       speakGen.current += 1
       speakAbortRef.current?.abort()
@@ -85,14 +101,13 @@ export function AssistantChat() {
     setSpeaking(true)
     try {
       const audio = await api.speakAssistantReply(text, abort.signal)
-      if (gen !== speakGen.current) return
+      if (gen !== speakGen.current || !openRef.current) return
       await playbackRef.current.play(audio)
       if (gen !== speakGen.current) return
       setSpeaking(false)
     } catch (err) {
       if (abort.signal.aborted || gen !== speakGen.current) return
-      const message = err instanceof Error && err.message.trim() ? err.message : SPEAK_RETRY
-      setSpeakError(message)
+      setSpeakError(speakErrorMessage(err))
       setSpeaking(false)
     }
   }
@@ -116,28 +131,28 @@ export function AssistantChat() {
         { id: nextId.current++, role: 'assistant', text: result.reply },
       ])
       setPending(false)
-      void speakReply(result.reply)
-    } catch {
-      setError("Can't reach the AquaFlow server. Try again.")
+      if (openRef.current) void speakReply(result.reply)
+    } catch (err) {
+      setError(isNetworkFailure(err) ? VOICE_MESSAGES.noInternet : VOICE_MESSAGES.chatUnreachable)
       setPending(false)
     }
   }
 
   async function startListening() {
-    if (pending || listening) return
+    if (pending || listening || understanding || finishingRef.current) return
     stopSpeaking()
     setError(undefined)
     setSpeakError(undefined)
+    listenGen.current += 1
     try {
-      recorderRef.current = await startSpeechRecording()
+      recorderRef.current = await startSpeechRecording({
+        onAutoStop: () => {
+          void finishListening()
+        },
+      })
       setListening(true)
     } catch (err) {
-      const blocked = err instanceof DOMException && (err.name === 'NotAllowedError' || err.name === 'NotFoundError')
-      setError(
-        blocked
-          ? 'Microphone is blocked. Allow the microphone and try again.'
-          : 'This browser cannot use the microphone. Type your question instead.',
-      )
+      setError(microphoneErrorMessage(err))
     }
   }
 
@@ -149,24 +164,48 @@ export function AssistantChat() {
       return
     }
     finishingRef.current = true
+    const gen = listenGen.current
     recorderRef.current = null
     setListening(false)
+    setUnderstanding(true)
+
+    const abort = new AbortController()
+    transcribeAbortRef.current?.abort()
+    transcribeAbortRef.current = abort
+    const timer = window.setTimeout(() => abort.abort(), TRANSCRIBE_MS)
+
     try {
       const wav = await recorder.stop()
-      const spoken = await api.transcribeSpeech(wav)
-      if (!spoken.ok || !spoken.text?.trim()) {
-        setError(spoken.reason ?? RETRY)
+      if (gen !== listenGen.current || !openRef.current) return
+      if (wavBlobIsTooShort(wav)) {
+        setError(VOICE_MESSAGES.couldNotHear)
         return
       }
+      const spoken = await api.transcribeSpeech(wav, abort.signal)
+      if (gen !== listenGen.current || !openRef.current) return
+      if (!spoken.ok || !spoken.text?.trim()) {
+        setError(toFarmerVoiceMessage(spoken.reason, VOICE_MESSAGES.couldNotUnderstand))
+        return
+      }
+      setUnderstanding(false)
       await send(spoken.text)
-    } catch {
-      setError(RETRY)
+    } catch (err) {
+      if (gen !== listenGen.current || !openRef.current) return
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError(VOICE_MESSAGES.generic)
+        return
+      }
+      setError(isNetworkFailure(err) ? VOICE_MESSAGES.noInternet : VOICE_MESSAGES.couldNotUnderstand)
     } finally {
+      window.clearTimeout(timer)
+      if (transcribeAbortRef.current === abort) transcribeAbortRef.current = null
+      if (gen === listenGen.current) setUnderstanding(false)
       finishingRef.current = false
     }
   }
 
   async function toggleListening() {
+    if (understanding || pending) return
     if (listening) {
       await finishListening()
       return
@@ -177,14 +216,26 @@ export function AssistantChat() {
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
+      listenGen.current += 1
+      transcribeAbortRef.current?.abort()
+      transcribeAbortRef.current = null
       void recorderRef.current?.stop()
       recorderRef.current = null
+      finishingRef.current = false
       setListening(false)
+      setUnderstanding(false)
       stopSpeaking()
     }
   }
 
-  const ready = messages.length > 0 && !pending && !listening && !speaking && !speakError
+  const busy = pending || listening || understanding
+  const status = voiceStatusLabel({ listening, understanding, pending, speaking })
+  const ready = messages.length > 0 && !busy && !speaking && !speakError
+  const micLabel = listening
+    ? VOICE_MESSAGES.listening
+    : understanding
+      ? VOICE_MESSAGES.understanding
+      : VOICE_MESSAGES.tapToSpeak
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -215,7 +266,7 @@ export function AssistantChat() {
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-lg border border-border bg-muted/40 p-3">
-          {messages.length === 0 && !pending && !listening ? (
+          {messages.length === 0 && !pending && !listening && !understanding ? (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-muted-foreground">Try one of these:</p>
               <div className="flex flex-col gap-2">
@@ -247,21 +298,27 @@ export function AssistantChat() {
               </div>
             ))
           )}
-          {listening ? <p className="text-sm font-medium text-primary">Listening…</p> : null}
-          {pending ? <p className="text-sm text-muted-foreground">Thinking…</p> : null}
-          {speaking ? (
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-primary">Speaking…</p>
-              <Button type="button" variant="outline" size="sm" onClick={stopSpeaking}>
-                Stop
-              </Button>
-            </div>
+          {status ? (
+            <p className="text-sm font-medium text-primary" aria-live="polite">
+              {status}
+            </p>
           ) : null}
-          {ready ? <p className="text-sm text-muted-foreground">Ready</p> : null}
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {ready ? <p className="text-sm text-muted-foreground">{VOICE_MESSAGES.ready}</p> : null}
+          {error ? (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
+          {speaking ? (
+            <Button type="button" variant="outline" size="sm" className="self-start" onClick={stopSpeaking}>
+              Stop
+            </Button>
+          ) : null}
           {speakError ? (
             <div className="flex flex-col gap-2">
-              <p className="text-sm text-destructive">{speakError}</p>
+              <p className="text-sm text-destructive" role="alert">
+                {speakError}
+              </p>
               {lastReply ? (
                 <Button
                   type="button"
@@ -292,7 +349,7 @@ export function AssistantChat() {
             onChange={(event) => setDraft(event.target.value)}
             placeholder="Ask about water, crops, or weather"
             aria-label="Message to AquaFlow Assistant"
-            disabled={pending || listening}
+            disabled={busy}
             className="h-10"
           />
           <Button
@@ -300,18 +357,27 @@ export function AssistantChat() {
             variant={listening ? 'default' : 'outline'}
             size="icon"
             className="h-10 w-10 shrink-0"
-            disabled={pending}
-            aria-label={listening ? 'Listening. Tap to send.' : 'Tap to speak'}
-            title={listening ? 'Listening…' : 'Tap to speak'}
+            disabled={pending || understanding}
+            aria-label={micLabel}
+            title={micLabel}
             aria-pressed={listening}
             onClick={() => void toggleListening()}
           >
             <Mic className="h-4 w-4" aria-hidden="true" />
           </Button>
-          <Button type="submit" disabled={pending || listening || draft.trim() === ''} aria-label="Send message">
+          <Button type="submit" disabled={busy || draft.trim() === ''} aria-label="Send message">
             <Send className="h-4 w-4" aria-hidden="true" />
           </Button>
         </form>
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          {listening
+            ? VOICE_MESSAGES.listening
+            : understanding
+              ? VOICE_MESSAGES.understanding
+              : speaking
+                ? VOICE_MESSAGES.speaking
+                : VOICE_MESSAGES.tapToSpeak}
+        </p>
       </DialogContent>
     </Dialog>
   )

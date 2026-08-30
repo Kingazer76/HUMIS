@@ -78,6 +78,7 @@ describe('POST /api/assistant/speak', () => {
     const res = await request(app).post('/api/assistant/speak').send({ text: 'Water level is good.' })
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(false)
-    expect(res.body.reason).toMatch(/KHAYA_API_KEY/)
+    expect(res.body.reason).toMatch(/written answer is still on screen/i)
+    expect(res.body.reason).not.toMatch(/KHAYA_API_KEY|tts|http/i)
   })
 })

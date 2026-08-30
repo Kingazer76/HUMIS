@@ -1,3 +1,4 @@
+import { toFarmerVoiceMessage, VOICE_MESSAGES } from '@aquaflow/shared'
 import type { Request, Response, NextFunction } from 'express'
 import { Router } from 'express'
 import { handleAssistantMessage } from '../assistant/handleMessage.js'
@@ -31,8 +32,6 @@ assistantRouter.post('/chat', async (req, res, next) => {
   }
 })
 
-const RETRY = "I didn't catch that. Tap the microphone and try again."
-
 /**
  * Speech-to-text only. The browser then sends `text` to `/chat`.
  * This route never calls the safety controller or farm math.
@@ -43,7 +42,10 @@ export async function transcribeSpeech(req: Request, res: Response, next: NextFu
     const contentType = String(req.headers['content-type'] ?? 'application/octet-stream')
     const result = await getSpeechToTextProvider().transcribe(audio, contentType)
     if (!result.ok || !result.text?.trim()) {
-      res.json({ ok: false, reason: result.reason ?? RETRY })
+      res.json({
+        ok: false,
+        reason: toFarmerVoiceMessage(result.reason, VOICE_MESSAGES.couldNotUnderstand),
+      })
       return
     }
     res.json({ ok: true, text: result.text.trim() })
@@ -51,8 +53,6 @@ export async function transcribeSpeech(req: Request, res: Response, next: NextFu
     next(error)
   }
 }
-
-const SPEAK_RETRY = "Couldn't speak that. The written answer is still on screen."
 
 /**
  * Text-to-speech only. Speaks the exact assistant reply.
@@ -62,12 +62,15 @@ export async function speakReply(req: Request, res: Response, next: NextFunction
   try {
     const text = req.body?.text
     if (typeof text !== 'string') {
-      res.status(400).json({ ok: false, reason: 'Request body must include a string "text"' })
+      res.status(400).json({ ok: false, reason: VOICE_MESSAGES.generic })
       return
     }
     const result = await getTextToSpeechProvider().speak(text)
     if (!result.ok || !result.audio) {
-      res.json({ ok: false, reason: result.reason ?? SPEAK_RETRY })
+      res.json({
+        ok: false,
+        reason: toFarmerVoiceMessage(result.reason, VOICE_MESSAGES.speakFailed),
+      })
       return
     }
     res.setHeader('Content-Type', result.contentType ?? 'audio/wav')
