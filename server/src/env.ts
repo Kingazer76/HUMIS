@@ -57,13 +57,22 @@ export const SIM_TICK_INTERVAL_MS = Number(process.env.SIM_TICK_INTERVAL_MS ?? 5
 /** Real milliseconds between automatic irrigation decision cycles (Auto mode only). */
 export const AUTO_IRRIGATION_INTERVAL_MS = Number(process.env.AUTO_IRRIGATION_INTERVAL_MS ?? 5000)
 
-/** Khaya AI API key — server only. Never send this to the browser. */
-export const KHAYA_API_KEY = process.env.KHAYA_API_KEY ?? ''
-
-/** Live read so a server env / `.env` key is picked up without a stale empty snapshot. */
-export function getKhayaApiKey(): string {
+/**
+ * Khaya ASR v3 subscription key — server only. Never send this to the browser,
+ * never log it, never put it in API responses.
+ */
+export function getKhayaAsrApiKey(): string {
   loadLocalEnvFile()
-  return (process.env.KHAYA_API_KEY ?? '').trim()
+  return (process.env.KHAYA_ASR_API_KEY ?? '').trim()
+}
+
+/**
+ * Khaya TTS v2 subscription key — server only. Never send this to the browser,
+ * never log it, never put it in API responses.
+ */
+export function getKhayaTtsApiKey(): string {
+  loadLocalEnvFile()
+  return (process.env.KHAYA_TTS_API_KEY ?? '').trim()
 }
 
 /**

@@ -39,7 +39,7 @@ describe('farmer voice messages', () => {
     )
     expect(toFarmerVoiceMessage('HTTP 500', VOICE_MESSAGES.generic)).toBe(VOICE_MESSAGES.generic)
     expect(toFarmerVoiceMessage('Khaya API error', VOICE_MESSAGES.generic)).toBe(VOICE_MESSAGES.generic)
-    expect(toFarmerVoiceMessage('Add KHAYA_API_KEY', VOICE_MESSAGES.voiceNotReady)).toBe(
+    expect(toFarmerVoiceMessage('Add KHAYA_ASR_API_KEY', VOICE_MESSAGES.voiceNotReady)).toBe(
       VOICE_MESSAGES.voiceNotReady,
     )
     expect(toFarmerVoiceMessage(VOICE_MESSAGES.couldNotHear, VOICE_MESSAGES.generic)).toBe(

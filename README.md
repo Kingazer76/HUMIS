@@ -73,20 +73,26 @@ ever talks to port 5417.
 
 ### Voice listening and speaking (Phases 8A–8B)
 
-Typed chat works with no extra setup. To let the microphone turn speech into text and to let
-the assistant read new answers out loud, get a Khaya AI API key from
-https://translation.ghananlp.org and copy `.env.example` to `.env` in the repo root:
+Typed chat works with no extra setup. Listening and speaking need **two separate Khaya keys**
+from https://translation.ghananlp.org — one for Automatic Speech Recognition API v3, and one
+for Text-To-Speech API v2. Copy `.env.example` to `.env` in the repo root (the same folder as
+`package.json`), then fill in:
 
 ```
-KHAYA_API_KEY=your-key
+KHAYA_ASR_API_KEY=your-asr-v3-key
+KHAYA_TTS_API_KEY=your-tts-v2-key
 KHAYA_ASR_LANGUAGE=eng
 KHAYA_TTS_LANGUAGE=eng
 ```
 
-`KHAYA_API_KEY` stays on the server. Restart `npm run dev` after editing `.env`. If the key
-is missing, typed chat still works. The microphone may still open, but AquaFlow will not
-guess speech or invent audio — it asks you to type instead. Voice needs an internet
-connection to Khaya; the rest of AquaFlow keeps working if Khaya is unreachable.
+Both keys stay on the server. Never put them in `client/` code, Vite `VITE_` variables, Git,
+or Render Blueprint files. Restart `npm run dev` after editing `.env`. If a key is missing,
+typed chat still works. The microphone may still open, but AquaFlow will not guess speech or
+invent audio — it asks you to type instead. Voice needs an internet connection to Khaya; the
+rest of AquaFlow keeps working if Khaya is unreachable.
+
+On Render, add the same two names under **Environment** in the web service dashboard. Do not
+paste keys into `render.yaml`.
 
 The microphone shows: **Tap to speak**, **Listening**, **Understanding**, then **Speaking**.
 Recognized speech appears in the chat as your message, then the same AquaFlow Assistant
@@ -112,7 +118,7 @@ Run tests:
 npm test --workspace server
 ```
 
-On Render, use a **Web Service** with the root of this repo. Build `npm install && npm run build`, start `npm start`. Set `USE_SIMULATED=true`. Do not add API keys. Typed assistant works without Khaya; microphone/speak stay optional.
+On Render, use a **Web Service** with the root of this repo. Build `npm install && npm run build`, start `npm start`. Set `USE_SIMULATED=true`. Typed assistant works without Khaya. For voice, set `KHAYA_ASR_API_KEY` and `KHAYA_TTS_API_KEY` in the Render dashboard Environment page — not in `render.yaml`.
 
 Simulation state and Settings live in memory inside the Express process. Restarting the server
 resets the farm, including tank size, field setup, and farm location. Weather planning uses

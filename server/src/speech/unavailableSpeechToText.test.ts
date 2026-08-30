@@ -7,6 +7,6 @@ describe('UnavailableSpeechToTextProvider', () => {
     expect(result.ok).toBe(false)
     expect(result.text).toBeUndefined()
     expect(result.reason).toMatch(/type your question/i)
-    expect(result.reason).not.toMatch(/KHAYA_API_KEY|asr|http/i)
+    expect(result.reason).not.toMatch(/KHAYA_API_KEY|KHAYA_ASR_API_KEY|asr|http/i)
   })
 })
