@@ -84,9 +84,9 @@ describe('POST /api/assistant/speech', () => {
     expect(res.body.reason).not.toMatch(/KHAYA_API_KEY|KHAYA_ASR_API_KEY|KHAYA_TTS_API_KEY|asr|http/i)
   })
 
-  it('reads KHAYA_ASR_API_KEY from the server environment and calls Khaya ASR v3', async () => {
-    const previous = process.env.KHAYA_ASR_API_KEY
-    process.env.KHAYA_ASR_API_KEY = 'env-test-asr-key'
+  it('reads KHAYA_API_KEY from the server environment and calls Khaya ASR v3', async () => {
+    const previous = process.env.KHAYA_API_KEY
+    process.env.KHAYA_API_KEY = 'env-test-key'
     setSpeechToTextProviderForTests(null)
     vi.stubGlobal(
       'fetch',
@@ -106,12 +106,12 @@ describe('POST /api/assistant/speech', () => {
       expect(String(calledUrl)).toContain('translation-api.ghananlp.org/asr/v3/transcribe')
       expect(String(calledUrl)).not.toMatch(/asr\/v1/i)
       expect((init as RequestInit | undefined)?.headers).toMatchObject({
-        'Ocp-Apim-Subscription-Key': 'env-test-asr-key',
+        'Ocp-Apim-Subscription-Key': 'env-test-key',
       })
     } finally {
       vi.unstubAllGlobals()
-      if (previous === undefined) delete process.env.KHAYA_ASR_API_KEY
-      else process.env.KHAYA_ASR_API_KEY = previous
+      if (previous === undefined) delete process.env.KHAYA_API_KEY
+      else process.env.KHAYA_API_KEY = previous
     }
   })
 })

@@ -6,7 +6,7 @@ dist/
 dist-ssr/
 *.tsbuildinfo
 
-# Env files (never commit secrets like KHAYA_ASR_API_KEY or KHAYA_TTS_API_KEY)
+# Env files (never commit secrets like KHAYA_API_KEY)
 .env
 .env.*
 !.env.example

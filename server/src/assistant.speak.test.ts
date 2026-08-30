@@ -82,9 +82,9 @@ describe('POST /api/assistant/speak', () => {
     expect(res.body.reason).not.toMatch(/KHAYA_API_KEY|KHAYA_ASR_API_KEY|KHAYA_TTS_API_KEY|tts|http/i)
   })
 
-  it('reads KHAYA_TTS_API_KEY from the server environment and calls Khaya TTS v2', async () => {
-    const previous = process.env.KHAYA_TTS_API_KEY
-    process.env.KHAYA_TTS_API_KEY = 'env-test-tts-key'
+  it('reads KHAYA_API_KEY from the server environment and calls Khaya TTS v2', async () => {
+    const previous = process.env.KHAYA_API_KEY
+    process.env.KHAYA_API_KEY = 'env-test-key'
     setTextToSpeechProviderForTests(null)
     vi.stubGlobal(
       'fetch',
@@ -102,12 +102,12 @@ describe('POST /api/assistant/speak', () => {
       expect(String(calledUrl)).toContain('translation-api.ghananlp.org/tts/v2/synthesize')
       expect(String(calledUrl)).not.toMatch(/tts\/v1/i)
       expect((init as RequestInit | undefined)?.headers).toMatchObject({
-        'Ocp-Apim-Subscription-Key': 'env-test-tts-key',
+        'Ocp-Apim-Subscription-Key': 'env-test-key',
       })
     } finally {
       vi.unstubAllGlobals()
-      if (previous === undefined) delete process.env.KHAYA_TTS_API_KEY
-      else process.env.KHAYA_TTS_API_KEY = previous
+      if (previous === undefined) delete process.env.KHAYA_API_KEY
+      else process.env.KHAYA_API_KEY = previous
     }
   })
 })

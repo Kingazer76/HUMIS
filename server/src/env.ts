@@ -58,21 +58,13 @@ export const SIM_TICK_INTERVAL_MS = Number(process.env.SIM_TICK_INTERVAL_MS ?? 5
 export const AUTO_IRRIGATION_INTERVAL_MS = Number(process.env.AUTO_IRRIGATION_INTERVAL_MS ?? 5000)
 
 /**
- * Khaya ASR v3 subscription key — server only. Never send this to the browser,
- * never log it, never put it in API responses.
+ * Khaya API key — server only. Used for both ASR v3 (listening) and
+ * TTS v2 (speaking). Never send this to the browser, never log it,
+ * never put it in API responses.
  */
-export function getKhayaAsrApiKey(): string {
+export function getKhayaApiKey(): string {
   loadLocalEnvFile()
-  return (process.env.KHAYA_ASR_API_KEY ?? '').trim()
-}
-
-/**
- * Khaya TTS v2 subscription key — server only. Never send this to the browser,
- * never log it, never put it in API responses.
- */
-export function getKhayaTtsApiKey(): string {
-  loadLocalEnvFile()
-  return (process.env.KHAYA_TTS_API_KEY ?? '').trim()
+  return (process.env.KHAYA_API_KEY ?? '').trim()
 }
 
 /**

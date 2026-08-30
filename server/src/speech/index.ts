@@ -1,13 +1,5 @@
 import { resolveKhayaLanguage } from '@aquaflow/shared'
-import {
-  getKhayaAsrApiKey,
-  getKhayaTtsApiKey,
-  KHAYA_ASR_LANGUAGE,
-  KHAYA_ASR_URL,
-  KHAYA_TTS_LANGUAGE,
-  KHAYA_TTS_SPEAKER,
-  KHAYA_TTS_URL,
-} from '../env.js'
+import { getKhayaApiKey, KHAYA_ASR_LANGUAGE, KHAYA_ASR_URL, KHAYA_TTS_LANGUAGE, KHAYA_TTS_SPEAKER, KHAYA_TTS_URL } from '../env.js'
 import { KhayaSpeechToTextProvider } from './khayaSpeechToText.js'
 import { KhayaTextToSpeechProvider } from './khayaTextToSpeech.js'
 import type { SpeechToTextProvider } from './speechToTextProvider.js'
@@ -19,7 +11,7 @@ export type { SpeechToTextProvider } from './speechToTextProvider.js'
 export type { TextToSpeechProvider } from './textToSpeechProvider.js'
 
 function createSpeechToTextProvider(): SpeechToTextProvider {
-  const key = getKhayaAsrApiKey()
+  const key = getKhayaApiKey()
   if (key) {
     return new KhayaSpeechToTextProvider({
       key,
@@ -31,7 +23,7 @@ function createSpeechToTextProvider(): SpeechToTextProvider {
 }
 
 function createTextToSpeechProvider(): TextToSpeechProvider {
-  const key = getKhayaTtsApiKey()
+  const key = getKhayaApiKey()
   if (key) {
     return new KhayaTextToSpeechProvider({
       key,

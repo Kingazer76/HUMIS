@@ -13,35 +13,34 @@ function restoreEnv(name: string, previous: string | undefined) {
   else process.env[name] = previous
 }
 
-describe('separate Khaya ASR and TTS keys', () => {
+describe('shared Khaya API key', () => {
+  const previousShared = process.env.KHAYA_API_KEY
   const previousAsr = process.env.KHAYA_ASR_API_KEY
   const previousTts = process.env.KHAYA_TTS_API_KEY
-  const previousLegacy = process.env.KHAYA_API_KEY
 
   beforeEach(() => {
     resetFarmSettingsForTests()
     simulatedProvider?.resetForTests()
     setSpeechToTextProviderForTests(null)
     setTextToSpeechProviderForTests(null)
+    delete process.env.KHAYA_API_KEY
     delete process.env.KHAYA_ASR_API_KEY
     delete process.env.KHAYA_TTS_API_KEY
-    delete process.env.KHAYA_API_KEY
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
     setSpeechToTextProviderForTests(null)
     setTextToSpeechProviderForTests(null)
+    restoreEnv('KHAYA_API_KEY', previousShared)
     restoreEnv('KHAYA_ASR_API_KEY', previousAsr)
     restoreEnv('KHAYA_TTS_API_KEY', previousTts)
-    restoreEnv('KHAYA_API_KEY', previousLegacy)
     resetFarmSettingsForTests()
     simulatedProvider?.resetForTests()
   })
 
-  it('sends the ASR v3 key only to ASR and the TTS v2 key only to TTS', async () => {
-    process.env.KHAYA_ASR_API_KEY = 'env-test-asr-key'
-    process.env.KHAYA_TTS_API_KEY = 'env-test-tts-key'
+  it('sends the same KHAYA_API_KEY to ASR v3 and TTS v2', async () => {
+    process.env.KHAYA_API_KEY = 'env-test-shared-key'
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string | URL) => {
@@ -75,15 +74,16 @@ describe('separate Khaya ASR and TTS keys', () => {
     expect(String(asr?.[0])).not.toMatch(/asr\/v1/i)
     expect(String(tts?.[0])).not.toMatch(/tts\/v1/i)
     expect((asr?.[1] as RequestInit | undefined)?.headers).toMatchObject({
-      'Ocp-Apim-Subscription-Key': 'env-test-asr-key',
+      'Ocp-Apim-Subscription-Key': 'env-test-shared-key',
     })
     expect((tts?.[1] as RequestInit | undefined)?.headers).toMatchObject({
-      'Ocp-Apim-Subscription-Key': 'env-test-tts-key',
+      'Ocp-Apim-Subscription-Key': 'env-test-shared-key',
     })
   })
 
-  it('does not use a leftover shared KHAYA_API_KEY for either service', async () => {
-    process.env.KHAYA_API_KEY = 'env-test-legacy-key'
+  it('does not use KHAYA_ASR_API_KEY or KHAYA_TTS_API_KEY', async () => {
+    process.env.KHAYA_ASR_API_KEY = 'env-test-asr-key'
+    process.env.KHAYA_TTS_API_KEY = 'env-test-tts-key'
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
