@@ -1,4 +1,4 @@
-# AquaFlow V3
+# AquaFlow
 
 AquaFlow is a low-cost smart water-management system for farms in Ghana. It helps
 farmers monitor water, manage irrigation, conserve water, and predict shortages.
