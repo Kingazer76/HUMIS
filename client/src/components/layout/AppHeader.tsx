@@ -8,7 +8,7 @@ export function AppHeader() {
     <header className="flex items-center justify-between gap-4 border-b border-border py-5">
       <div className="flex min-w-0 items-center gap-3">
         <img
-          src="/logo.png"
+          src="/logo.png?v=clear"
           alt=""
           className="h-12 w-12 shrink-0 bg-transparent object-contain sm:h-14 sm:w-14"
         />
