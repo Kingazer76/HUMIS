@@ -84,6 +84,9 @@ export function parseIntent(message: string, zones: IrrigationZone[] = []): Assi
 
   const mentionsPump = /\bpump\b/.test(text)
   const mentionsWatering = /\b(water|watering|irrigation|irrigate|field|fields|crops?)\b/.test(text)
+  const mentionsOn = /\bon\b/.test(text)
+  const mentionsOff = /\boff\b/.test(text)
+  const askingStatus = /\b(is|are|how|what|does|do we|status)\b/.test(text)
   const startVerb =
     /\b(start|begin|turn on|switch on|open|water now)\b/.test(text) ||
     text.includes('water now') ||
@@ -91,9 +94,11 @@ export function parseIntent(message: string, zones: IrrigationZone[] = []): Assi
   const stopVerb =
     /\b(stop|halt|turn off|switch off|shut off|close)\b/.test(text) || /\bturn\b.{0,16}\boff\b/.test(text)
 
-  if (!askingAdvice(text)) {
-    if (mentionsPump && startVerb) return { type: 'action', action: 'start-pump' }
-    if (mentionsPump && stopVerb) return { type: 'action', action: 'stop-pump' }
+  if (!askingAdvice(text) && !askingStatus) {
+    if (mentionsPump && (startVerb || mentionsOn) && !mentionsOff) {
+      return { type: 'action', action: 'start-pump' }
+    }
+    if (mentionsPump && (stopVerb || mentionsOff)) return { type: 'action', action: 'stop-pump' }
     if (stopVerb && mentionsWatering) {
       return { type: 'action', action: 'stop-watering', zoneId: zone?.id }
     }

@@ -62,6 +62,11 @@ describe('parseIntent', () => {
   it('maps pump on/off separately from field watering', () => {
     expect(parseIntent('Turn on the pump')).toEqual({ type: 'action', action: 'start-pump' })
     expect(parseIntent('Turn off the pump')).toEqual({ type: 'action', action: 'stop-pump' })
+    expect(parseIntent('Tone off the pump.')).toEqual({ type: 'action', action: 'stop-pump' })
+  })
+
+  it('does not turn the pump when the farmer is asking a status question', () => {
+    expect(parseIntent('Is the pump on?')).toEqual({ type: 'question', topic: 'irrigation' })
   })
 
   it('maps stop watering', () => {
@@ -98,6 +103,7 @@ describe('parseIntent', () => {
     expect(parseIntent('asdfghjk')).toEqual({ type: 'unclear' })
     expect(parseIntent('hmm')).toEqual({ type: 'unclear' })
     expect(parseIntent('I like bananas')).toEqual({ type: 'unclear' })
+    expect(parseIntent('Shod I       Gatinao.')).toEqual({ type: 'unclear' })
   })
 
   it('maps short yes and no for a later confirm step', () => {

@@ -140,6 +140,14 @@ describe('POST /api/assistant/chat', () => {
     expect(system.body.pump.isOn.value).toBe(true)
   })
 
+  it('does not dump farm status when ASR text is nonsense', async () => {
+    const res = await request(app).post('/api/assistant/chat').send({ message: 'Shod I       Gatinao.' })
+    expect(res.status).toBe(200)
+    expect(res.body.reply).toMatch(/didn['’]t quite catch that/i)
+    expect(res.body.reply).not.toMatch(/Water level is good/i)
+    expect(res.body.action).toBeUndefined()
+  })
+
   it('answers should-I-irrigate as a question, not a watering start', async () => {
     const res = await request(app).post('/api/assistant/chat').send({ message: 'Should I irrigate now?' })
     expect(res.status).toBe(200)
