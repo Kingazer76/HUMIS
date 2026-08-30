@@ -49,10 +49,11 @@ export function activeKhayaLanguage(): KhayaLanguageCode {
 
 /** Farmer-facing voice copy. Never include API, HTTP, or key details. */
 export const VOICE_MESSAGES = {
-  tapToSpeak: 'Tap to speak',
-  listening: '🎙️ Listening...',
-  understanding: 'Understanding...',
-  thinking: 'Thinking…',
+  holdToSpeak: 'Hold to speak',
+  tapToSpeak: 'Hold to speak',
+  listening: 'Listening...',
+  understanding: 'Thinking...',
+  thinking: 'Thinking...',
   speaking: 'Speaking...',
   ready: 'Ready',
   couldNotHear: "Sorry, I couldn't hear you.",

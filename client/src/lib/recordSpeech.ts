@@ -71,11 +71,14 @@ export interface SpeechRecorder {
 
 /**
  * Records microphone audio as 16 kHz WAV for Khaya ASR.
- * Tap to start, tap again to stop. After 12 seconds it stops on its own
- * so the Assistant cannot stay stuck on "Listening".
+ * Hold to speak: start on press, stop on release. After 12 seconds it
+ * stops on its own so the Assistant cannot stay stuck on "Listening".
+ * Voice level is written to a CSS variable so the plant can move
+ * without React re-rendering every frame.
  */
 export async function startSpeechRecording(options?: {
   onAutoStop?: () => void
+  levelElement?: HTMLElement | null
 }): Promise<SpeechRecorder> {
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new Error(VOICE_MESSAGES.micUnsupported)
@@ -86,6 +89,8 @@ export async function startSpeechRecording(options?: {
   if (context.state === 'suspended') await context.resume()
   const source = context.createMediaStreamSource(stream)
   const processor = context.createScriptProcessor(4096, 1, 1)
+  const analyser = context.createAnalyser()
+  analyser.fftSize = 256
   const mute = context.createGain()
   mute.gain.value = 0
 
@@ -94,6 +99,7 @@ export async function startSpeechRecording(options?: {
     chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)))
   }
 
+  source.connect(analyser)
   source.connect(processor)
   processor.connect(mute)
   mute.connect(context.destination)
@@ -102,13 +108,43 @@ export async function startSpeechRecording(options?: {
   let finished: Promise<Blob> | undefined
   let stopped = false
   let timeoutId = 0
+  let rafId = 0
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const levelEl = options?.levelElement
+  const samples = new Uint8Array(analyser.fftSize)
+  let smoothed = 0
+
+  function writeLevel(value: number) {
+    levelEl?.style.setProperty('--voice-level', value.toFixed(3))
+  }
+
+  function watchLevel() {
+    analyser.getByteTimeDomainData(samples)
+    let sum = 0
+    for (const value of samples) {
+      const n = (value - 128) / 128
+      sum += n * n
+    }
+    const rms = Math.sqrt(sum / samples.length)
+    const level = Math.min(1, rms * 3.4)
+    smoothed = smoothed * 0.84 + level * 0.16
+    writeLevel(smoothed)
+    rafId = window.requestAnimationFrame(watchLevel)
+  }
+
+  if (levelEl && !reduceMotion) {
+    rafId = window.requestAnimationFrame(watchLevel)
+  }
 
   async function stop() {
     if (finished) return finished
     stopped = true
     window.clearTimeout(timeoutId)
+    window.cancelAnimationFrame(rafId)
+    writeLevel(0)
     finished = (async () => {
       processor.disconnect()
+      analyser.disconnect()
       source.disconnect()
       mute.disconnect()
       stream.getTracks().forEach((track) => track.stop())

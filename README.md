@@ -93,7 +93,7 @@ Khaya; the rest of AquaFlow keeps working if Khaya is unreachable.
 On Render, add `KHAYA_API_KEY` under **Environment** in the web service dashboard. Do not
 paste the key into `render.yaml`.
 
-The microphone shows: **Tap to speak**, **Listening**, **Understanding**, then **Speaking**.
+The plant shows: **Hold to speak**, **Listening**, **Thinking**, then **Speaking**.
 Recognized speech appears in the chat as your message, then the same AquaFlow Assistant
 answers it. Ghanaian-language switching is Phase 8C. Only African English (`eng`) is active.
 

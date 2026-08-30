@@ -25,15 +25,34 @@ export function speakErrorMessage(err: unknown): string {
   return toFarmerVoiceMessage(message, VOICE_MESSAGES.speakFailed)
 }
 
+export type VoicePlantPhase = 'idle' | 'listening' | 'thinking' | 'speaking'
+
+export function voicePlantPhase(phase: {
+  listening: boolean
+  understanding: boolean
+  pending: boolean
+  speaking: boolean
+}): VoicePlantPhase {
+  if (phase.listening) return 'listening'
+  if (phase.understanding || phase.pending) return 'thinking'
+  if (phase.speaking) return 'speaking'
+  return 'idle'
+}
+
 export function voiceStatusLabel(phase: {
   listening: boolean
   understanding: boolean
   pending: boolean
   speaking: boolean
 }): string | undefined {
-  if (phase.listening) return VOICE_MESSAGES.listening
-  if (phase.understanding) return VOICE_MESSAGES.understanding
-  if (phase.pending) return VOICE_MESSAGES.thinking
-  if (phase.speaking) return VOICE_MESSAGES.speaking
-  return undefined
+  const plant = voicePlantPhase(phase)
+  if (plant === 'idle') return undefined
+  return voicePlantCaption(plant)
+}
+
+export function voicePlantCaption(phase: VoicePlantPhase): string {
+  if (phase === 'listening') return VOICE_MESSAGES.listening
+  if (phase === 'thinking') return VOICE_MESSAGES.thinking
+  if (phase === 'speaking') return VOICE_MESSAGES.speaking
+  return VOICE_MESSAGES.holdToSpeak
 }

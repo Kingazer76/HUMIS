@@ -23,7 +23,7 @@ describe('shared Khaya API key', () => {
     simulatedProvider?.resetForTests()
     setSpeechToTextProviderForTests(null)
     setTextToSpeechProviderForTests(null)
-    delete process.env.KHAYA_API_KEY
+    process.env.KHAYA_API_KEY = ' '
     delete process.env.KHAYA_ASR_API_KEY
     delete process.env.KHAYA_TTS_API_KEY
   })

@@ -5,6 +5,7 @@ import { resetFarmSettingsForTests } from './config/farmSettings.js'
 import { simulatedProvider } from './providers/index.js'
 import { setSpeechToTextProviderForTests } from './speech/index.js'
 import type { SpeechToTextProvider } from './speech/speechToTextProvider.js'
+import { UnavailableSpeechToTextProvider } from './speech/unavailableSpeechToText.js'
 
 const app = createApp()
 const silentWav = Buffer.alloc(256, 0)
@@ -75,7 +76,7 @@ describe('POST /api/assistant/speech', () => {
   })
 
   it('does not invent words when speech is not configured', async () => {
-    setSpeechToTextProviderForTests(null)
+    setSpeechToTextProviderForTests(new UnavailableSpeechToTextProvider())
     const res = await request(app).post('/api/assistant/speech').set('Content-Type', 'audio/wav').send(silentWav)
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(false)

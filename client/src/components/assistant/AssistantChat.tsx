@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { VOICE_MESSAGES, toFarmerVoiceMessage } from '@aquaflow/shared'
-import { MessageCircle, Mic, Send } from '@/lib/icons'
+import { MessageCircle, Send } from '@/lib/icons'
+import { VoicePlant } from '@/components/assistant/VoicePlant'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -18,6 +19,8 @@ import {
   isNetworkFailure,
   microphoneErrorMessage,
   speakErrorMessage,
+  voicePlantCaption,
+  voicePlantPhase,
   voiceStatusLabel,
 } from '@/lib/voiceErrors'
 import { cn } from '@/lib/utils'
@@ -40,7 +43,8 @@ const TRANSCRIBE_MS = 30_000
 /**
  * Header chat for the AquaFlow Assistant. Typed messages and recognized
  * speech both go to `/api/assistant/chat` — the same farm-brain path.
- * New assistant replies are then spoken through `/api/assistant/speak`.
+ * Hold the plant to speak. New answers are then spoken through
+ * `/api/assistant/speak`.
  */
 export function AssistantChat() {
   const [open, setOpen] = useState(false)
@@ -53,9 +57,11 @@ export function AssistantChat() {
   const [speakError, setSpeakError] = useState<string | undefined>()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
+  const plantRef = useRef<HTMLButtonElement>(null)
   const nextId = useRef(1)
   const recorderRef = useRef<SpeechRecorder | null>(null)
   const finishingRef = useRef(false)
+  const holdingRef = useRef(false)
   const openRef = useRef(false)
   const listenGen = useRef(0)
   const playbackRef = useRef(createSpeechPlayback())
@@ -74,6 +80,7 @@ export function AssistantChat() {
 
   useEffect(() => {
     return () => {
+      holdingRef.current = false
       listenGen.current += 1
       transcribeAbortRef.current?.abort()
       void recorderRef.current?.stop()
@@ -146,12 +153,19 @@ export function AssistantChat() {
     listenGen.current += 1
     try {
       recorderRef.current = await startSpeechRecording({
+        levelElement: plantRef.current,
         onAutoStop: () => {
+          holdingRef.current = false
           void finishListening()
         },
       })
+      if (!holdingRef.current) {
+        await finishListening()
+        return
+      }
       setListening(true)
     } catch (err) {
+      holdingRef.current = false
       setError(microphoneErrorMessage(err))
     }
   }
@@ -204,18 +218,22 @@ export function AssistantChat() {
     }
   }
 
-  async function toggleListening() {
-    if (understanding || pending) return
-    if (listening) {
-      await finishListening()
-      return
-    }
-    await startListening()
+  function beginHold() {
+    if (pending || understanding || finishingRef.current) return
+    holdingRef.current = true
+    void startListening()
+  }
+
+  function endHold() {
+    if (!holdingRef.current && !listening) return
+    holdingRef.current = false
+    void finishListening()
   }
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
     if (!next) {
+      holdingRef.current = false
       listenGen.current += 1
       transcribeAbortRef.current?.abort()
       transcribeAbortRef.current = null
@@ -229,13 +247,10 @@ export function AssistantChat() {
   }
 
   const busy = pending || listening || understanding
+  const plantPhase = voicePlantPhase({ listening, understanding, pending, speaking })
+  const plantLabel = voicePlantCaption(plantPhase)
   const status = voiceStatusLabel({ listening, understanding, pending, speaking })
   const ready = messages.length > 0 && !busy && !speaking && !speakError
-  const micLabel = listening
-    ? VOICE_MESSAGES.listening
-    : understanding
-      ? VOICE_MESSAGES.understanding
-      : VOICE_MESSAGES.tapToSpeak
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -254,14 +269,14 @@ export function AssistantChat() {
         <MessageCircle className="h-4 w-4" aria-hidden="true" />
       </DialogTrigger>
       <DialogContent
-        className="flex max-h-[min(36rem,85svh)] w-full flex-col gap-3 sm:max-w-lg"
+        className="flex max-h-[min(40rem,90svh)] w-full flex-col gap-3 sm:max-w-lg"
         showCloseButton
       >
         <DialogHeader>
           <DialogTitle>AquaFlow Assistant</DialogTitle>
           <DialogDescription>
-            Ask about your water, fields, or weather. Tap the microphone to speak. I use the same
-            safety gate as the Irrigation buttons. New answers are read out loud.
+            Ask about your water, fields, or weather. Hold the plant to speak. I use the same safety
+            gate as the Irrigation buttons. New answers are read out loud.
           </DialogDescription>
         </DialogHeader>
 
@@ -337,6 +352,20 @@ export function AssistantChat() {
           <div ref={bottomRef} />
         </div>
 
+        <div className="flex flex-col items-center gap-1.5">
+          <VoicePlant
+            plantRef={plantRef}
+            phase={plantPhase}
+            disabled={pending || understanding}
+            label={plantLabel}
+            onHoldStart={beginHold}
+            onHoldEnd={endHold}
+          />
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            {plantLabel}
+          </p>
+        </div>
+
         <form
           className="flex gap-2"
           onSubmit={(event) => {
@@ -352,32 +381,10 @@ export function AssistantChat() {
             disabled={busy}
             className="h-10"
           />
-          <Button
-            type="button"
-            variant={listening ? 'default' : 'outline'}
-            size="icon"
-            className="h-10 w-10 shrink-0"
-            disabled={pending || understanding}
-            aria-label={micLabel}
-            title={micLabel}
-            aria-pressed={listening}
-            onClick={() => void toggleListening()}
-          >
-            <Mic className="h-4 w-4" aria-hidden="true" />
-          </Button>
           <Button type="submit" disabled={busy || draft.trim() === ''} aria-label="Send message">
             <Send className="h-4 w-4" aria-hidden="true" />
           </Button>
         </form>
-        <p className="text-xs text-muted-foreground" aria-live="polite">
-          {listening
-            ? VOICE_MESSAGES.listening
-            : understanding
-              ? VOICE_MESSAGES.understanding
-              : speaking
-                ? VOICE_MESSAGES.speaking
-                : VOICE_MESSAGES.tapToSpeak}
-        </p>
       </DialogContent>
     </Dialog>
   )

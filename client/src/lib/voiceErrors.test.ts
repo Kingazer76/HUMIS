@@ -5,16 +5,18 @@ import {
   isNetworkFailure,
   microphoneErrorMessage,
   speakErrorMessage,
+  voicePlantCaption,
+  voicePlantPhase,
   voiceStatusLabel,
 } from './voiceErrors'
 
 describe('voice status labels', () => {
-  it('shows Listening, Understanding, Thinking, then Speaking in order', () => {
+  it('shows Listening, Thinking, then Speaking, and Hold to speak when idle', () => {
     expect(voiceStatusLabel({ listening: true, understanding: false, pending: false, speaking: false })).toBe(
       VOICE_MESSAGES.listening,
     )
     expect(voiceStatusLabel({ listening: false, understanding: true, pending: false, speaking: false })).toBe(
-      VOICE_MESSAGES.understanding,
+      VOICE_MESSAGES.thinking,
     )
     expect(voiceStatusLabel({ listening: false, understanding: false, pending: true, speaking: false })).toBe(
       VOICE_MESSAGES.thinking,
@@ -23,6 +25,21 @@ describe('voice status labels', () => {
       VOICE_MESSAGES.speaking,
     )
     expect(voiceStatusLabel({ listening: false, understanding: false, pending: false, speaking: false })).toBeUndefined()
+  })
+
+  it('maps farm-voice phases for the plant: water idle, listening, thinking, speaking', () => {
+    expect(voicePlantPhase({ listening: true, understanding: false, pending: false, speaking: false })).toBe(
+      'listening',
+    )
+    expect(voicePlantPhase({ listening: false, understanding: true, pending: false, speaking: false })).toBe(
+      'thinking',
+    )
+    expect(voicePlantCaption('idle')).toBe(VOICE_MESSAGES.holdToSpeak)
+    expect(voicePlantCaption('listening')).toBe(VOICE_MESSAGES.listening)
+    expect(voicePlantCaption('thinking')).toBe(VOICE_MESSAGES.thinking)
+    expect(voicePlantCaption('speaking')).toBe(VOICE_MESSAGES.speaking)
+    expect(VOICE_MESSAGES.listening).toBe('Listening...')
+    expect(VOICE_MESSAGES.holdToSpeak).toBe('Hold to speak')
   })
 })
 

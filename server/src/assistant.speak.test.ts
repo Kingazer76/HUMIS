@@ -5,6 +5,7 @@ import { resetFarmSettingsForTests } from './config/farmSettings.js'
 import { simulatedProvider } from './providers/index.js'
 import { setTextToSpeechProviderForTests } from './speech/index.js'
 import type { TextToSpeechProvider } from './speech/textToSpeechProvider.js'
+import { UnavailableTextToSpeechProvider } from './speech/unavailableTextToSpeech.js'
 
 const app = createApp()
 const wav = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(36, 1)])
@@ -74,7 +75,7 @@ describe('POST /api/assistant/speak', () => {
   })
 
   it('does not invent audio when speech is not configured', async () => {
-    setTextToSpeechProviderForTests(null)
+    setTextToSpeechProviderForTests(new UnavailableTextToSpeechProvider())
     const res = await request(app).post('/api/assistant/speak').send({ text: 'Water level is good.' })
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(false)
