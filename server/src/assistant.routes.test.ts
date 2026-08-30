@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from './app.js'
+import { resetPendingConfirmForTests } from './assistant/handleMessage.js'
 import { resetFarmSettingsForTests } from './config/farmSettings.js'
 import { simulatedProvider } from './providers/index.js'
 
@@ -8,11 +9,13 @@ const app = createApp()
 
 beforeEach(() => {
   resetFarmSettingsForTests()
+  resetPendingConfirmForTests()
   simulatedProvider?.resetForTests()
 })
 
 afterEach(() => {
   resetFarmSettingsForTests()
+  resetPendingConfirmForTests()
   simulatedProvider?.resetForTests()
 })
 
@@ -88,5 +91,60 @@ describe('POST /api/assistant/chat', () => {
 
     const zones = await request(app).get('/api/zones')
     expect(zones.body.find((z: { id: string }) => z.id === 'zone-a').state.active).toBe(false)
+  })
+
+  it('does not dump farm status when speech is unclear', async () => {
+    const res = await request(app).post('/api/assistant/chat').send({ message: 'asdfghjk' })
+    expect(res.status).toBe(200)
+    expect(res.body.reply).toMatch(/didn['’]t quite catch that/i)
+    expect(res.body.reply).not.toMatch(/L in the tank|Water level is good/i)
+    expect(res.body.action).toBeUndefined()
+  })
+
+  it('asks before acting on a likely but uncertain pump command', async () => {
+    const res = await request(app).post('/api/assistant/chat').send({ message: 'Turn on the comb.' })
+    expect(res.status).toBe(200)
+    expect(res.body.reply).toMatch(/misheard/i)
+    expect(res.body.reply).toMatch(/turn on the pump/i)
+    expect(res.body.action).toBeUndefined()
+
+    const pump = await request(app).get('/api/system')
+    expect(pump.body.pump.isOn.value).toBe(false)
+  })
+
+  it('only runs a confirmed guess through the same safety gate', async () => {
+    await request(app).post('/api/assistant/chat').send({ message: 'Turn on the comb.' })
+    const res = await request(app).post('/api/assistant/chat').send({ message: 'Yes' })
+    expect(res.status).toBe(200)
+    expect(res.body.action?.ok).toBe(false)
+    expect(res.body.action?.reason).toMatch(/manual mode/i)
+    expect(res.body.reply.toLowerCase()).toMatch(/safety gate|manual/)
+  })
+
+  it('cancels an uncertain command without touching the pump', async () => {
+    await request(app).post('/api/assistant/chat').send({ message: 'Turn on the comb.' })
+    const res = await request(app).post('/api/assistant/chat').send({ message: 'No' })
+    expect(res.status).toBe(200)
+    expect(res.body.reply).toMatch(/will not do that/i)
+    expect(res.body.action).toBeUndefined()
+  })
+
+  it('after a clear yes, still uses the safety gate to turn the pump on', async () => {
+    const mode = await request(app).post('/api/assistant/chat').send({ message: 'Switch to manual' })
+    expect(mode.body.action?.ok).toBe(true)
+    await request(app).post('/api/assistant/chat').send({ message: 'Turn on the comb.' })
+    const res = await request(app).post('/api/assistant/chat').send({ message: 'Yes' })
+    expect(res.status).toBe(200)
+    expect(res.body.action?.ok).toBe(true)
+    const system = await request(app).get('/api/system')
+    expect(system.body.pump.isOn.value).toBe(true)
+  })
+
+  it('answers should-I-irrigate as a question, not a watering start', async () => {
+    const res = await request(app).post('/api/assistant/chat').send({ message: 'Should I irrigate now?' })
+    expect(res.status).toBe(200)
+    expect(res.body.action).toBeUndefined()
+    expect(res.body.reply.toLowerCase()).toMatch(/watering|pump|field/)
+    expect(res.body.reply).not.toMatch(/didn['’]t quite catch that/i)
   })
 })

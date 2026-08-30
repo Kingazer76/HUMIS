@@ -72,4 +72,36 @@ describe('parseIntent', () => {
     expect(parseIntent('Switch to manual')).toEqual({ type: 'action', action: 'mode-manual' })
     expect(parseIntent('Switch to auto')).toEqual({ type: 'action', action: 'mode-auto' })
   })
+
+  it('treats advice questions as questions, not watering actions', () => {
+    expect(parseIntent('Should I irrigate now?')).toEqual({ type: 'question', topic: 'irrigation' })
+    expect(parseIntent('Is the soil dry?')).toEqual({ type: 'question', topic: 'soil' })
+  })
+
+  it('does not map a misheard pump word to a pump action', () => {
+    expect(parseIntent('Turn on the comb.')).toEqual({
+      type: 'clarify',
+      suggestion: 'turn on the pump',
+      pendingAction: { action: 'start-pump' },
+    })
+  })
+
+  it('asks to start irrigation when start has no known target', () => {
+    expect(parseIntent('Start the machine')).toEqual({
+      type: 'clarify',
+      suggestion: 'start irrigation',
+      pendingAction: { action: 'start-watering' },
+    })
+  })
+
+  it('marks leftover speech as unclear instead of a general farm dump', () => {
+    expect(parseIntent('asdfghjk')).toEqual({ type: 'unclear' })
+    expect(parseIntent('hmm')).toEqual({ type: 'unclear' })
+    expect(parseIntent('I like bananas')).toEqual({ type: 'unclear' })
+  })
+
+  it('maps short yes and no for a later confirm step', () => {
+    expect(parseIntent('Yes')).toEqual({ type: 'confirm' })
+    expect(parseIntent('No')).toEqual({ type: 'cancel' })
+  })
 })

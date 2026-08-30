@@ -12,6 +12,9 @@ const DEFAULT_URL = 'https://translation-api.ghananlp.org/asr/v3/transcribe'
  * Keys stay on the server. This layer only turns audio into text.
  * Ghanaian-language switching is not enabled yet — African English (`eng`)
  * is the live language.
+ *
+ * The public ASR v3 request is the audio body plus `language`. There is no
+ * documented vocabulary, phrase-hint, or farm-domain field. Do not invent one.
  */
 export class KhayaSpeechToTextProvider implements SpeechToTextProvider {
   constructor(
@@ -30,6 +33,7 @@ export class KhayaSpeechToTextProvider implements SpeechToTextProvider {
     const language = resolveKhayaLanguage(this.options.language)
     const url = new URL(this.options.transcribeUrl?.trim() || DEFAULT_URL)
     url.searchParams.set('language', language)
+    // Only `language` is a supported query field. No hints / boost / glossary.
 
     try {
       const res = await fetch(url, {

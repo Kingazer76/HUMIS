@@ -29,6 +29,7 @@ interface ChatMessage {
   id: number
   role: 'user' | 'assistant'
   text: string
+  heard?: boolean
 }
 
 const SUGGESTIONS = [
@@ -119,12 +120,17 @@ export function AssistantChat() {
     }
   }
 
-  async function send(text: string) {
+  async function send(text: string, options?: { heard?: boolean }) {
     const message = text.trim()
     if (!message || pending) return
 
     stopSpeaking()
-    const userMsg: ChatMessage = { id: nextId.current++, role: 'user', text: message }
+    const userMsg: ChatMessage = {
+      id: nextId.current++,
+      role: 'user',
+      text: message,
+      heard: options?.heard,
+    }
     setMessages((current) => [...current, userMsg])
     setDraft('')
     setPending(true)
@@ -202,7 +208,7 @@ export function AssistantChat() {
         return
       }
       setUnderstanding(false)
-      await send(spoken.text)
+      await send(spoken.text, { heard: true })
     } catch (err) {
       if (gen !== listenGen.current || !openRef.current) return
       if (err instanceof Error && err.name === 'AbortError') {
@@ -309,6 +315,12 @@ export function AssistantChat() {
                     : 'bg-card text-foreground ring-1 ring-border',
                 )}
               >
+                {message.role === 'user' && message.heard ? (
+                  <p className="mb-1 text-xs font-medium opacity-80">You said:</p>
+                ) : null}
+                {message.role === 'assistant' ? (
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">AquaFlow:</p>
+                ) : null}
                 {message.text}
               </div>
             ))

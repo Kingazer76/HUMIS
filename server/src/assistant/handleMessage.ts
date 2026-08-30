@@ -1,8 +1,15 @@
 import type { AssistantChatResponse, IrrigationActionResult, IrrigationZone } from '@aquaflow/shared'
+import { VOICE_MESSAGES } from '@aquaflow/shared'
 import { safetyController } from '../irrigation/safetyController.js'
 import { answerQuestion } from './answerQuestion.js'
 import { loadFarmState } from './loadFarmState.js'
-import { parseIntent, type AssistantIntent } from './parseIntent.js'
+import { parseIntent, type PendingAction } from './parseIntent.js'
+
+let pendingConfirm: PendingAction | null = null
+
+export function resetPendingConfirmForTests(): void {
+  pendingConfirm = null
+}
 
 function farmerBlock(reason: string): string {
   if (/critical threshold/i.test(reason)) {
@@ -77,7 +84,7 @@ async function runZoneAction(
   }
 }
 
-async function performAction(intent: Extract<AssistantIntent, { type: 'action' }>): Promise<{
+async function performAction(intent: PendingAction): Promise<{
   reply: string
   action?: IrrigationActionResult
 }> {
@@ -105,13 +112,50 @@ async function performAction(intent: Extract<AssistantIntent, { type: 'action' }
   return runZoneAction(farm.zones, false, intent.zoneId)
 }
 
+function misheardReply(suggestion: string): string {
+  return `${VOICE_MESSAGES.misheard} Did you mean '${suggestion}'?`
+}
+
 export async function handleAssistantMessage(message: string): Promise<AssistantChatResponse> {
   const farm = await loadFarmState()
   const intent = parseIntent(message, farm.zones)
+
+  if (intent.type === 'confirm') {
+    if (!pendingConfirm) {
+      return { reply: VOICE_MESSAGES.didntCatch }
+    }
+    const action = pendingConfirm
+    pendingConfirm = null
+    return performAction(action)
+  }
+
+  if (intent.type === 'cancel') {
+    if (pendingConfirm) {
+      pendingConfirm = null
+      return { reply: VOICE_MESSAGES.cancelled }
+    }
+    return { reply: VOICE_MESSAGES.didntCatch }
+  }
+
+  if (intent.type === 'clarify') {
+    pendingConfirm = intent.pendingAction
+    return { reply: misheardReply(intent.suggestion) }
+  }
+
+  if (intent.type === 'unclear') {
+    pendingConfirm = null
+    return { reply: VOICE_MESSAGES.didntCatch }
+  }
+
+  pendingConfirm = null
 
   if (intent.type === 'action') {
     return performAction(intent)
   }
 
   return { reply: answerQuestion(intent.topic, farm) }
+}
+
+export function peekPendingConfirmForTests(): PendingAction | null {
+  return pendingConfirm
 }

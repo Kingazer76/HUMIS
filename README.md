@@ -94,8 +94,12 @@ On Render, add `KHAYA_API_KEY` under **Environment** in the web service dashboar
 paste the key into `render.yaml`.
 
 The plant shows: **Hold to speak**, **Listening**, **Thinking**, then **Speaking**.
-Recognized speech appears in the chat as your message, then the same AquaFlow Assistant
-answers it. Ghanaian-language switching is Phase 8C. Only African English (`eng`) is active.
+Recognized speech appears in the chat as **You said**, then the same AquaFlow Assistant
+answers it. If the words are unclear, or a control command is missing a clear target
+(for example Khaya heard "comb" instead of "pump"), AquaFlow asks you to try again or
+confirm — it does not guess a farm-status answer, and it does not turn hardware on
+until you clearly confirm. The safety gate still has the last word. Ghanaian-language
+switching is Phase 8C. Only African English (`eng`) is active.
 
 You can also run each side on its own:
 

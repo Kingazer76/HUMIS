@@ -28,6 +28,8 @@ describe('KhayaSpeechToTextProvider', () => {
       'Ocp-Apim-Subscription-Key': 'test-key',
       'Content-Type': 'audio/wav',
     })
+    const params = [...new URL(String(calledUrl)).searchParams.keys()]
+    expect(params).toEqual(['language'])
   })
 
   it('does not guess when Khaya returns empty text', async () => {
