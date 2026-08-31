@@ -115,4 +115,29 @@ describe('POST /api/assistant/speech', () => {
       else process.env.KHAYA_API_KEY = previous
     }
   })
+
+  it('listens in Asante Twi when that language is requested', async () => {
+    const previous = process.env.KHAYA_API_KEY
+    process.env.KHAYA_API_KEY = 'env-test-key'
+    setSpeechToTextProviderForTests(null)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ text: 'Nsu no yɛ.' }),
+      }),
+    )
+    try {
+      const res = await request(app)
+        .post('/api/assistant/speech?language=twi')
+        .set('Content-Type', 'audio/wav')
+        .send(Buffer.alloc(256, 1))
+      expect(res.body).toEqual({ ok: true, text: 'Nsu no yɛ.' })
+      expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('language=twi')
+    } finally {
+      vi.unstubAllGlobals()
+      if (previous === undefined) delete process.env.KHAYA_API_KEY
+      else process.env.KHAYA_API_KEY = previous
+    }
+  })
 })

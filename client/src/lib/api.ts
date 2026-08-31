@@ -92,11 +92,18 @@ export const api = {
   setPumpState: (isOn: boolean) => postJson<IrrigationActionResult>('/api/irrigation/pump', { isOn }),
   setOperationMode: (mode: OperationMode) =>
     postJson<IrrigationActionResult>('/api/irrigation/mode', { mode }),
-  sendAssistantMessage: (message: string) =>
-    postJson<AssistantChatResponse>('/api/assistant/chat', { message }),
-  transcribeSpeech: async (audio: Blob, signal?: AbortSignal): Promise<SpeechToTextResponse> => {
+  sendAssistantMessage: (message: string, language?: string) =>
+    postJson<AssistantChatResponse>('/api/assistant/chat', language ? { message, language } : { message }),
+  transcribeSpeech: async (
+    audio: Blob,
+    signal?: AbortSignal,
+    language?: string,
+  ): Promise<SpeechToTextResponse> => {
     try {
-      const res = await fetch('/api/assistant/speech', {
+      const path = language
+        ? `/api/assistant/speech?language=${encodeURIComponent(language)}`
+        : '/api/assistant/speech'
+      const res = await fetch(path, {
         method: 'POST',
         headers: { 'Content-Type': audio.type || 'audio/wav' },
         body: audio,
@@ -130,12 +137,12 @@ export const api = {
       return { ok: false, reason: VOICE_MESSAGES.generic }
     }
   },
-  speakAssistantReply: async (text: string, signal?: AbortSignal): Promise<Blob> => {
+  speakAssistantReply: async (text: string, signal?: AbortSignal, language?: string): Promise<Blob> => {
     try {
       const res = await fetch('/api/assistant/speak', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify(language ? { text, language } : { text }),
         signal,
       })
       const type = res.headers.get('content-type') ?? ''

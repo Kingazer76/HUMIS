@@ -7,8 +7,8 @@ const RIFF = Buffer.from('RIFF')
 /**
  * Khaya AI Text-to-Speech (TTS v2).
  * Keys stay on the server. The reply text is sent unchanged.
- * Ghanaian-language switching is not enabled yet — African English (`eng`)
- * is the live language.
+ * Ghanaian-language switching is per request. African English (`eng`)
+ * remains the default when no language is given.
  */
 export class KhayaTextToSpeechProvider implements TextToSpeechProvider {
   constructor(
@@ -20,12 +20,12 @@ export class KhayaTextToSpeechProvider implements TextToSpeechProvider {
     },
   ) {}
 
-  async speak(text: string): Promise<TextToSpeechResult> {
+  async speak(text: string, languageOverride?: string): Promise<TextToSpeechResult> {
     if (typeof text !== 'string' || text.trim().length === 0) {
       return { ok: false, reason: VOICE_MESSAGES.speakFailed }
     }
 
-    const language = resolveKhayaLanguage(this.options.language)
+    const language = resolveKhayaLanguage(languageOverride ?? this.options.language)
     const url = this.options.synthesizeUrl?.trim() || DEFAULT_URL
     const speaker = this.options.speaker?.trim()
     const payload: { text: string; language: string; format: string; speaker_id?: string } = {

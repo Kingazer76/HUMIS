@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { VOICE_MESSAGES, toFarmerVoiceMessage } from '@aquaflow/shared'
+import { VOICE_MESSAGES, toFarmerVoiceMessage, type AssistantLanguageId } from '@aquaflow/shared'
 import { MessageCircle, Send } from '@/lib/icons'
+import { AssistantLanguageSelect } from '@/components/assistant/AssistantLanguageSelect'
 import { VoicePlant } from '@/components/assistant/VoicePlant'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api'
+import { readStoredAssistantLanguage, storeAssistantLanguage } from '@/lib/assistantLanguage'
 import { createSpeechPlayback } from '@/lib/playSpeech'
 import { startSpeechRecording, wavBlobIsTooShort, type SpeechRecorder } from '@/lib/recordSpeech'
 import {
@@ -70,10 +72,26 @@ export function AssistantChat() {
   const speakAbortRef = useRef<AbortController | null>(null)
   const transcribeAbortRef = useRef<AbortController | null>(null)
   const [lastReply, setLastReply] = useState<string | undefined>()
+  const [language, setLanguage] = useState<AssistantLanguageId>('eng')
+  const languageRef = useRef<AssistantLanguageId>('eng')
 
   useEffect(() => {
     openRef.current = open
   }, [open])
+
+  useEffect(() => {
+    const stored = readStoredAssistantLanguage()
+    languageRef.current = stored
+    setLanguage(stored)
+  }, [])
+
+  function changeLanguage(next: AssistantLanguageId) {
+    languageRef.current = next
+    setLanguage(next)
+    storeAssistantLanguage(next)
+    setError(undefined)
+    setSpeakError(undefined)
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' })
@@ -108,7 +126,7 @@ export function AssistantChat() {
     setSpeakError(undefined)
     setSpeaking(true)
     try {
-      const audio = await api.speakAssistantReply(text, abort.signal)
+      const audio = await api.speakAssistantReply(text, abort.signal, languageRef.current)
       if (gen !== speakGen.current || !openRef.current) return
       await playbackRef.current.play(audio)
       if (gen !== speakGen.current) return
@@ -138,7 +156,7 @@ export function AssistantChat() {
     setSpeakError(undefined)
 
     try {
-      const result = await api.sendAssistantMessage(message)
+      const result = await api.sendAssistantMessage(message, languageRef.current)
       setMessages((current) => [
         ...current,
         { id: nextId.current++, role: 'assistant', text: result.reply },
@@ -201,7 +219,7 @@ export function AssistantChat() {
         setError(VOICE_MESSAGES.couldNotHear)
         return
       }
-      const spoken = await api.transcribeSpeech(wav, abort.signal)
+      const spoken = await api.transcribeSpeech(wav, abort.signal, languageRef.current)
       if (gen !== listenGen.current || !openRef.current) return
       if (!spoken.ok || !spoken.text?.trim()) {
         setError(toFarmerVoiceMessage(spoken.reason, VOICE_MESSAGES.couldNotUnderstand))
@@ -285,6 +303,8 @@ export function AssistantChat() {
             gate as the Irrigation buttons. New answers are read out loud.
           </DialogDescription>
         </DialogHeader>
+
+        <AssistantLanguageSelect value={language} onChange={changeLanguage} />
 
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-lg border border-border bg-muted/40 p-3">
           {messages.length === 0 && !pending && !listening && !understanding ? (

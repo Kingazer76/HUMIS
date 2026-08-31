@@ -1,25 +1,48 @@
 import { describe, expect, it } from 'vitest'
 import {
-  KHAYA_LANGUAGE_CATALOG,
+  ASSISTANT_LANGUAGE_OPTIONS,
+  DEFAULT_ASSISTANT_LANGUAGE,
   DEFAULT_KHAYA_LANGUAGE,
+  KHAYA_LANGUAGE_CATALOG,
+  activeAssistantLanguages,
   activeKhayaLanguage,
+  assistantLanguageConfig,
   isRegisteredKhayaLanguage,
+  resolveAssistantLanguage,
   resolveKhayaLanguage,
   toFarmerVoiceMessage,
   VOICE_MESSAGES,
 } from '@aquaflow/shared'
 
 describe('Khaya language catalog', () => {
-  it('only treats African English as active', () => {
+  it('defaults to African English and keeps it as the safe fallback', () => {
     expect(DEFAULT_KHAYA_LANGUAGE).toBe('eng')
+    expect(DEFAULT_ASSISTANT_LANGUAGE).toBe('eng')
     expect(activeKhayaLanguage()).toBe('eng')
     expect(KHAYA_LANGUAGE_CATALOG.eng.active).toBe(true)
     expect(KHAYA_LANGUAGE_CATALOG.eng.asrSupported).toBe(true)
     expect(KHAYA_LANGUAGE_CATALOG.eng.ttsSupported).toBe(true)
-    expect(Object.keys(KHAYA_LANGUAGE_CATALOG)).toEqual(['eng'])
-    expect(isRegisteredKhayaLanguage('twi')).toBe(false)
+    expect(resolveAssistantLanguage(undefined)).toBe('eng')
+    expect(resolveAssistantLanguage('nope')).toBe('eng')
+  })
+
+  it('only offers languages confirmed on the live Khaya ASR, TTS, and translation catalogs', () => {
+    expect(ASSISTANT_LANGUAGE_OPTIONS).toEqual(['eng', 'twi', 'atw', 'gaa', 'ewe', 'fat'])
+    expect(activeAssistantLanguages().map((item) => item.label)).toEqual([
+      'English',
+      'Asante Twi',
+      'Akuapem Twi',
+      'Ga',
+      'Ewe',
+      'Fante',
+    ])
+    expect(assistantLanguageConfig('twi')).toMatchObject({ asrCode: 'twi', ttsCode: 'twi', translateCode: 'twi' })
+    expect(assistantLanguageConfig('atw')).toMatchObject({ asrCode: 'atw', ttsCode: 'atw', translateCode: 'twi' })
+    expect(assistantLanguageConfig('gaa')).toMatchObject({ asrCode: 'gaa', ttsCode: 'gaa', translateCode: 'gaa' })
+    expect(assistantLanguageConfig('ewe')).toMatchObject({ asrCode: 'ewe', ttsCode: 'ewe', translateCode: 'ewe' })
+    expect(assistantLanguageConfig('fat')).toMatchObject({ asrCode: 'fat', ttsCode: 'fat', translateCode: 'fat' })
+    expect(isRegisteredKhayaLanguage('twi')).toBe(true)
     expect(isRegisteredKhayaLanguage('ga')).toBe(false)
-    expect(isRegisteredKhayaLanguage('ewe')).toBe(false)
   })
 
   it('falls back to African English and can pass a later code without rewriting chat', () => {

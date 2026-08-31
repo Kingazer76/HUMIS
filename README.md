@@ -153,6 +153,8 @@ Extra rain is overflow and is not stored. Rainwater is not a separate reserve.
       answers stay on screen. No Ghanaian-language switching yet.
 - [x] **Khaya voice layer** — microphone states, farmer-friendly voice errors, language
       catalog for later Ghanaian languages, and recording/playback that cannot stay stuck.
-- [ ] **Phase 8C** — Ghanaian-language support (translation).
+- [x] **Phase 8C** — Ghanaian-language selector in the existing Assistant. Khaya remains
+      ears and mouth (ASR, translation to/from English, TTS). HUMIS remains the farm brain
+      and safety gate. Default stays English.
 - [ ] **Phase 9 (deferred)** — real ESP32 hardware integration. Not started; `USE_SIMULATED`
       stays `true` until this is explicitly requested.

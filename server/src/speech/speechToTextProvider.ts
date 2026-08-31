@@ -5,5 +5,5 @@ import type { SpeechToTextResponse } from '@aquaflow/shared'
  * Chat still receives plain text — swapping this does not change the assistant.
  */
 export interface SpeechToTextProvider {
-  transcribe(audio: Buffer, contentType: string): Promise<SpeechToTextResponse>
+  transcribe(audio: Buffer, contentType: string, language?: string): Promise<SpeechToTextResponse>
 }

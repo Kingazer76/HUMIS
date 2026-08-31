@@ -430,14 +430,21 @@ export interface TextToSpeechErrorResponse {
 }
 
 export {
+  ASSISTANT_LANGUAGE_OPTIONS,
+  ASSISTANT_LANGUAGE_STORAGE_KEY,
+  DEFAULT_ASSISTANT_LANGUAGE,
   DEFAULT_KHAYA_LANGUAGE,
   KHAYA_LANGUAGE_CATALOG,
   VOICE_MESSAGES,
+  activeAssistantLanguages,
   activeKhayaLanguage,
+  assistantLanguageConfig,
+  isAssistantLanguageId,
   isRegisteredKhayaLanguage,
+  resolveAssistantLanguage,
   resolveKhayaLanguage,
   toFarmerVoiceMessage,
 } from './speech.js'
-export type { KhayaLanguageCode } from './speech.js'
+export type { AssistantLanguageConfig, AssistantLanguageId, KhayaLanguageCode } from './speech.js'
 
 export const AQUAFLOW_SHARED_VERSION = '0.8.0'

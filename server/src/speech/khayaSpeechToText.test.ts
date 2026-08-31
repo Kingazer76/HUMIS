@@ -32,6 +32,19 @@ describe('KhayaSpeechToTextProvider', () => {
     expect(params).toEqual(['language'])
   })
 
+  it('uses the per-request ASR language', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ text: 'Nsu no yɛ.' }),
+      }),
+    )
+    const provider = new KhayaSpeechToTextProvider({ key: 'test-key', language: 'eng' })
+    await provider.transcribe(wav, 'audio/wav', 'twi')
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('language=twi')
+  })
+
   it('does not guess when Khaya returns empty text', async () => {
     vi.stubGlobal(
       'fetch',

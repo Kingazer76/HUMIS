@@ -6,7 +6,11 @@ import type { SpeechToTextProvider } from './speechToTextProvider.js'
  * The farmer sees a simple type-instead message — not the key name.
  */
 export class UnavailableSpeechToTextProvider implements SpeechToTextProvider {
-  async transcribe(_audio: Buffer, _contentType: string): Promise<SpeechToTextResponse> {
+  async transcribe(
+    _audio: Buffer,
+    _contentType: string,
+    _language?: string,
+  ): Promise<SpeechToTextResponse> {
     return {
       ok: false,
       reason: VOICE_MESSAGES.voiceNotReady,

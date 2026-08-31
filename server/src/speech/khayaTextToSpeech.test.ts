@@ -38,6 +38,22 @@ describe('KhayaTextToSpeechProvider', () => {
     })
   })
 
+  it('sends the requested TTS language instead of the constructor default', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => 'audio/wav' },
+        arrayBuffer: async () => wav.buffer.slice(wav.byteOffset, wav.byteOffset + wav.byteLength),
+      }),
+    )
+    const provider = new KhayaTextToSpeechProvider({ key: 'test-key', language: 'eng' })
+    await provider.speak('Nsu no yɛ.', 'twi')
+    expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body))).toMatchObject({
+      language: 'twi',
+    })
+  })
+
   it('does not invent audio when Khaya returns an error', async () => {
     vi.stubGlobal(
       'fetch',

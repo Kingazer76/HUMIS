@@ -10,5 +10,5 @@ export interface TextToSpeechResult {
 }
 
 export interface TextToSpeechProvider {
-  speak(text: string): Promise<TextToSpeechResult>
+  speak(text: string, language?: string): Promise<TextToSpeechResult>
 }

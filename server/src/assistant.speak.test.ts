@@ -111,4 +111,44 @@ describe('POST /api/assistant/speak', () => {
       else process.env.KHAYA_API_KEY = previous
     }
   })
+
+  it('asks Khaya TTS to speak Asante Twi when that language is requested', async () => {
+    const previous = process.env.KHAYA_API_KEY
+    process.env.KHAYA_API_KEY = 'env-test-key'
+    setTextToSpeechProviderForTests(null)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => 'audio/wav' },
+        arrayBuffer: async () => wav.buffer.slice(wav.byteOffset, wav.byteOffset + wav.byteLength),
+      }),
+    )
+    try {
+      const spoken = await request(app)
+        .post('/api/assistant/speak')
+        .send({ text: 'Nsu no yɛ.', language: 'twi' })
+      expect(spoken.status).toBe(200)
+      expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0]?.[1]?.body))).toMatchObject({
+        language: 'twi',
+        text: 'Nsu no yɛ.',
+      })
+    } finally {
+      vi.unstubAllGlobals()
+      if (previous === undefined) delete process.env.KHAYA_API_KEY
+      else process.env.KHAYA_API_KEY = previous
+    }
+  })
+
+  it('keeps the written answer when Ghanaian TTS fails', async () => {
+    setTextToSpeechProviderForTests({
+      speak: async () => ({ ok: false, reason: 'TTS endpoint unavailable' }),
+    })
+    const spoken = await request(app)
+      .post('/api/assistant/speak')
+      .send({ text: 'Nsu no yɛ.', language: 'twi' })
+    expect(spoken.body.ok).toBe(false)
+    expect(spoken.body.reason).toMatch(/not available for this language|written answer/i)
+    expect(spoken.body.reason).not.toMatch(/KHAYA_API_KEY|tts endpoint|http/i)
+  })
 })

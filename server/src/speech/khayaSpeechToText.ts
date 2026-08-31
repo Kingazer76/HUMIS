@@ -10,8 +10,8 @@ const DEFAULT_URL = 'https://translation-api.ghananlp.org/asr/v3/transcribe'
 /**
  * Khaya AI Automatic Speech Recognition (ASR v3).
  * Keys stay on the server. This layer only turns audio into text.
- * Ghanaian-language switching is not enabled yet — African English (`eng`)
- * is the live language.
+ * Ghanaian-language switching is per request. African English (`eng`)
+ * remains the default when no language is given.
  *
  * The public ASR v3 request is the audio body plus `language`. There is no
  * documented vocabulary, phrase-hint, or farm-domain field. Do not invent one.
@@ -25,12 +25,16 @@ export class KhayaSpeechToTextProvider implements SpeechToTextProvider {
     },
   ) {}
 
-  async transcribe(audio: Buffer, contentType: string): Promise<SpeechToTextResponse> {
+  async transcribe(
+    audio: Buffer,
+    contentType: string,
+    languageOverride?: string,
+  ): Promise<SpeechToTextResponse> {
     if (audio.byteLength < 100) {
       return { ok: false, reason: VOICE_MESSAGES.couldNotHear }
     }
 
-    const language = resolveKhayaLanguage(this.options.language)
+    const language = resolveKhayaLanguage(languageOverride ?? this.options.language)
     const url = new URL(this.options.transcribeUrl?.trim() || DEFAULT_URL)
     url.searchParams.set('language', language)
     // Only `language` is a supported query field. No hints / boost / glossary.

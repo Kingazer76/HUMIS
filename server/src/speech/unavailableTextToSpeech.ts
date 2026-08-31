@@ -6,7 +6,7 @@ import type { TextToSpeechProvider, TextToSpeechResult } from './textToSpeechPro
  * The written assistant answer must stay on screen.
  */
 export class UnavailableTextToSpeechProvider implements TextToSpeechProvider {
-  async speak(_text: string): Promise<TextToSpeechResult> {
+  async speak(_text: string, _language?: string): Promise<TextToSpeechResult> {
     return {
       ok: false,
       reason: VOICE_MESSAGES.speakFailed,

@@ -1,10 +1,16 @@
-import { toFarmerVoiceMessage, VOICE_MESSAGES } from '@aquaflow/shared'
+import { toFarmerVoiceMessage, VOICE_MESSAGES, assistantLanguageConfig } from '@aquaflow/shared'
 import type { Request, Response, NextFunction } from 'express'
 import { Router } from 'express'
-import { handleAssistantMessage } from '../assistant/handleMessage.js'
+import { handleLocalizedAssistantMessage } from '../assistant/localizeMessage.js'
 import { getSpeechToTextProvider, getTextToSpeechProvider } from '../speech/index.js'
 
 export const assistantRouter = Router()
+
+function requestedLanguage(value: unknown): string | undefined {
+  if (typeof value === 'string') return value
+  if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
+  return undefined
+}
 
 /**
  * Text chat for the AquaFlow Assistant. Questions read the same farm
@@ -25,7 +31,7 @@ assistantRouter.post('/chat', async (req, res, next) => {
       })
       return
     }
-    const result = await handleAssistantMessage(trimmed)
+    const result = await handleLocalizedAssistantMessage(trimmed, requestedLanguage(req.body?.language))
     res.json(result)
   } catch (error) {
     next(error)
@@ -40,11 +46,14 @@ export async function transcribeSpeech(req: Request, res: Response, next: NextFu
   try {
     const audio = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0)
     const contentType = String(req.headers['content-type'] ?? 'application/octet-stream')
-    const result = await getSpeechToTextProvider().transcribe(audio, contentType)
+    const asrCode = assistantLanguageConfig(requestedLanguage(req.query.language)).asrCode
+    const result = await getSpeechToTextProvider().transcribe(audio, contentType, asrCode)
     if (!result.ok || !result.text?.trim()) {
+      const fallback =
+        asrCode === 'eng' ? VOICE_MESSAGES.couldNotUnderstand : VOICE_MESSAGES.couldNotUnderstandLanguage
       res.json({
         ok: false,
-        reason: toFarmerVoiceMessage(result.reason, VOICE_MESSAGES.couldNotUnderstand),
+        reason: toFarmerVoiceMessage(result.reason, fallback),
       })
       return
     }
@@ -65,11 +74,14 @@ export async function speakReply(req: Request, res: Response, next: NextFunction
       res.status(400).json({ ok: false, reason: VOICE_MESSAGES.generic })
       return
     }
-    const result = await getTextToSpeechProvider().speak(text)
+    const ttsCode = assistantLanguageConfig(requestedLanguage(req.body?.language)).ttsCode
+    const result = await getTextToSpeechProvider().speak(text, ttsCode)
     if (!result.ok || !result.audio) {
+      const fallback =
+        ttsCode === 'eng' ? VOICE_MESSAGES.speakFailed : VOICE_MESSAGES.voiceUnavailableForLanguage
       res.json({
         ok: false,
-        reason: toFarmerVoiceMessage(result.reason, VOICE_MESSAGES.speakFailed),
+        reason: toFarmerVoiceMessage(result.reason, fallback),
       })
       return
     }
