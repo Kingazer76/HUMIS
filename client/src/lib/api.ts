@@ -19,8 +19,15 @@ import type {
 import { toFarmerVoiceMessage, VOICE_MESSAGES } from '@aquaflow/shared'
 import { isNetworkFailure } from './voiceErrors'
 
+function notifyIfSignedOut(path: string, status: number): void {
+  if (status !== 401) return
+  if (path.startsWith('/api/auth/')) return
+  window.dispatchEvent(new Event('humis:unauthorized'))
+}
+
 async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(path)
+  const res = await fetch(path, { credentials: 'include' })
+  notifyIfSignedOut(path, res.status)
   if (!res.ok) throw new Error(`${path} responded with ${res.status}`)
   return (await res.json()) as T
 }
@@ -28,9 +35,11 @@ async function getJson<T>(path: string): Promise<T> {
 async function putJson<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
     method: 'PUT',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
+  notifyIfSignedOut(path, res.status)
   if (!res.ok) throw new Error(`${path} responded with ${res.status}`)
   return (await res.json()) as T
 }
@@ -38,9 +47,11 @@ async function putJson<T>(path: string, body?: unknown): Promise<T> {
 async function postJson<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
     method: 'POST',
+    credentials: 'include',
     headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
+  notifyIfSignedOut(path, res.status)
   if (!res.ok) throw new Error(`${path} responded with ${res.status}`)
   return (await res.json()) as T
 }
@@ -105,6 +116,7 @@ export const api = {
         : '/api/assistant/speech'
       const res = await fetch(path, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': audio.type || 'audio/wav' },
         body: audio,
         signal,
@@ -113,12 +125,14 @@ export const api = {
       try {
         body = (await res.json()) as SpeechToTextResponse
       } catch {
+        notifyIfSignedOut(path, res.status)
         return { ok: false, reason: VOICE_MESSAGES.generic }
       }
       if (!body || typeof body !== 'object') {
         return { ok: false, reason: VOICE_MESSAGES.generic }
       }
       if (!res.ok || !body.ok) {
+        notifyIfSignedOut(path, res.status)
         return {
           ok: false,
           reason: toFarmerVoiceMessage(body.reason, VOICE_MESSAGES.couldNotUnderstand),
@@ -141,11 +155,13 @@ export const api = {
     try {
       const res = await fetch('/api/assistant/speak', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(language ? { text, language } : { text }),
         signal,
       })
       const type = res.headers.get('content-type') ?? ''
+      notifyIfSignedOut('/api/assistant/speak', res.status)
       if (res.ok && type.includes('audio')) {
         const blob = await res.blob()
         if (blob.size < 12) throw new Error(VOICE_MESSAGES.speakFailed)

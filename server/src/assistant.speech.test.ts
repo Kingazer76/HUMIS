@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import request from 'supertest'
+import { createAuthedAgent } from './test/authedAgent.js'
 import { createApp } from './app.js'
 import { resetFarmSettingsForTests } from './config/farmSettings.js'
 import { simulatedProvider } from './providers/index.js'
@@ -8,6 +8,7 @@ import type { SpeechToTextProvider } from './speech/speechToTextProvider.js'
 import { UnavailableSpeechToTextProvider } from './speech/unavailableSpeechToText.js'
 
 const app = createApp()
+const agent = await createAuthedAgent(app)
 const silentWav = Buffer.alloc(256, 0)
 
 beforeEach(() => {
@@ -28,7 +29,7 @@ describe('POST /api/assistant/speech', () => {
     }
     setSpeechToTextProviderForTests(fake)
 
-    const res = await request(app).post('/api/assistant/speech').set('Content-Type', 'audio/wav').send(silentWav)
+    const res = await agent.post('/api/assistant/speech').set('Content-Type', 'audio/wav').send(silentWav)
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ ok: true, text: 'How much water do I have?' })
   })
@@ -38,7 +39,7 @@ describe('POST /api/assistant/speech', () => {
       transcribe: async () => ({ ok: false, reason: "I didn't catch that. Tap the microphone and try again." }),
     })
 
-    const res = await request(app).post('/api/assistant/speech').set('Content-Type', 'audio/wav').send(silentWav)
+    const res = await agent.post('/api/assistant/speech').set('Content-Type', 'audio/wav').send(silentWav)
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(false)
     expect(res.body.text).toBeUndefined()
@@ -49,10 +50,10 @@ describe('POST /api/assistant/speech', () => {
     setSpeechToTextProviderForTests({
       transcribe: async () => ({ ok: true, text: 'How much water do I have?' }),
     })
-    const spoken = await request(app).post('/api/assistant/speech').set('Content-Type', 'audio/wav').send(silentWav)
+    const spoken = await agent.post('/api/assistant/speech').set('Content-Type', 'audio/wav').send(silentWav)
     expect(spoken.body.ok).toBe(true)
 
-    const chat = await request(app).post('/api/assistant/chat').send({ message: spoken.body.text })
+    const chat = await agent.post('/api/assistant/chat').send({ message: spoken.body.text })
     expect(chat.status).toBe(200)
     expect(chat.body.reply).toMatch(/L/)
     expect(chat.body.reply.toLowerCase()).toMatch(/tank|water level/)
@@ -62,22 +63,22 @@ describe('POST /api/assistant/speech', () => {
     setSpeechToTextProviderForTests({
       transcribe: async () => ({ ok: true, text: 'Turn on the pump' }),
     })
-    const spoken = await request(app).post('/api/assistant/speech').set('Content-Type', 'audio/wav').send(silentWav)
-    const chat = await request(app).post('/api/assistant/chat').send({ message: spoken.body.text })
+    const spoken = await agent.post('/api/assistant/speech').set('Content-Type', 'audio/wav').send(silentWav)
+    const chat = await agent.post('/api/assistant/chat').send({ message: spoken.body.text })
     expect(chat.body.action?.ok).toBe(false)
     expect(chat.body.action?.reason).toMatch(/manual mode/i)
     expect(chat.body.reply.toLowerCase()).toMatch(/safety gate|manual/)
   })
 
   it('typed chat still works while speech is available', async () => {
-    const res = await request(app).post('/api/assistant/chat').send({ message: 'Is it raining?' })
+    const res = await agent.post('/api/assistant/chat').send({ message: 'Is it raining?' })
     expect(res.status).toBe(200)
     expect(res.body.reply.toLowerCase()).toMatch(/rain/)
   })
 
   it('does not invent words when speech is not configured', async () => {
     setSpeechToTextProviderForTests(new UnavailableSpeechToTextProvider())
-    const res = await request(app).post('/api/assistant/speech').set('Content-Type', 'audio/wav').send(silentWav)
+    const res = await agent.post('/api/assistant/speech').set('Content-Type', 'audio/wav').send(silentWav)
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(false)
     expect(res.body.text).toBeUndefined()
@@ -97,7 +98,7 @@ describe('POST /api/assistant/speech', () => {
       }),
     )
     try {
-      const res = await request(app)
+      const res = await agent
         .post('/api/assistant/speech')
         .set('Content-Type', 'audio/wav')
         .send(Buffer.alloc(256, 1))
@@ -128,7 +129,7 @@ describe('POST /api/assistant/speech', () => {
       }),
     )
     try {
-      const res = await request(app)
+      const res = await agent
         .post('/api/assistant/speech?language=twi')
         .set('Content-Type', 'audio/wav')
         .send(Buffer.alloc(256, 1))

@@ -430,6 +430,13 @@ export interface TextToSpeechErrorResponse {
 }
 
 export {
+  AUTH_GENERIC_FORGOT_MESSAGE,
+  AUTH_GENERIC_LOGIN_ERROR,
+  DEFAULT_FARM_ID,
+} from './auth.js'
+export type { AccountStatus, AuthUserPublic } from './auth.js'
+
+export {
   ASSISTANT_LANGUAGE_OPTIONS,
   ASSISTANT_LANGUAGE_STORAGE_KEY,
   DEFAULT_ASSISTANT_LANGUAGE,

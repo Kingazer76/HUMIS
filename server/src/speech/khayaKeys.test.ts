@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import request from 'supertest'
+import { createAuthedAgent } from '../test/authedAgent.js'
 import { createApp } from '../app.js'
 import { resetFarmSettingsForTests } from '../config/farmSettings.js'
 import { simulatedProvider } from '../providers/index.js'
 import { setSpeechToTextProviderForTests, setTextToSpeechProviderForTests } from './index.js'
 
 const app = createApp()
+const agent = await createAuthedAgent(app)
 const wav = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(36, 1)])
 
 function restoreEnv(name: string, previous: string | undefined) {
@@ -56,11 +57,11 @@ describe('shared Khaya API key', () => {
       }),
     )
 
-    const spoken = await request(app)
+    const spoken = await agent
       .post('/api/assistant/speech')
       .set('Content-Type', 'audio/wav')
       .send(Buffer.alloc(256, 1))
-    const voiced = await request(app).post('/api/assistant/speak').send({ text: 'Water level is good.' })
+    const voiced = await agent.post('/api/assistant/speak').send({ text: 'Water level is good.' })
 
     expect(spoken.body).toEqual({ ok: true, text: 'How much water do I have?' })
     expect(voiced.status).toBe(200)
@@ -87,11 +88,11 @@ describe('shared Khaya API key', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
-    const spoken = await request(app)
+    const spoken = await agent
       .post('/api/assistant/speech')
       .set('Content-Type', 'audio/wav')
       .send(Buffer.alloc(256, 1))
-    const voiced = await request(app).post('/api/assistant/speak').send({ text: 'Water level is good.' })
+    const voiced = await agent.post('/api/assistant/speak').send({ text: 'Water level is good.' })
 
     expect(spoken.body.ok).toBe(false)
     expect(voiced.body.ok).toBe(false)

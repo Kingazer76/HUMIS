@@ -16,6 +16,9 @@ logs
 *.log
 npm-debug.log*
 
+# HUMIS account files (password hashes and sessions — never commit)
+data/
+
 # Editor / OS
 .vscode/*
 !.vscode/extensions.json

@@ -9,6 +9,7 @@ import { MoreDetails, SettingHint } from '@/components/settings/MoreDetails'
 import { TankConfigForm } from '@/components/settings/TankConfigForm'
 import { FarmLocationForm } from '@/components/settings/FarmLocationForm'
 import { ZoneSettingsList } from '@/components/settings/ZoneSettingsList'
+import { AccountCard } from '@/components/settings/AccountCard'
 import { usePolling } from '@/hooks/usePolling'
 import { api } from '@/lib/api'
 import { farmerSoilName, formatLiters, formatMm, formatPercent, formatTemperatureC } from '@/lib/format'
@@ -80,6 +81,8 @@ export function SettingsPage() {
       <p className="text-sm text-muted-foreground">
         Tell AquaFlow about your farm in everyday words. You do not need special water words.
       </p>
+
+      <AccountCard />
 
       <SectionCard
         icon={<Sprout className="h-4 w-4" />}

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -102,4 +103,78 @@ export function readFarmLocationFromEnv(): { latitude: number; longitude: number
   if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return undefined
   const label = (process.env.FARM_LOCATION_LABEL ?? '').trim()
   return { latitude, longitude, label: label || 'Farm location' }
+}
+
+function repoRoot(): string {
+  return resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+}
+
+let ephemeralSessionSecret: string | undefined
+
+/**
+ * Mixes into session-token hashes. Set AUTH_SESSION_SECRET in production
+ * so sessions survive a restart. Never send this to the browser.
+ */
+export function authSessionSecret(): string {
+  const fromEnv = (process.env.AUTH_SESSION_SECRET ?? '').trim()
+  if (fromEnv.length >= 16) return fromEnv
+  if (!ephemeralSessionSecret) {
+    ephemeralSessionSecret = randomBytes(32).toString('hex')
+    if (process.env.VITEST !== 'true') {
+      // eslint-disable-next-line no-console
+      console.warn(
+        '[HUMIS] AUTH_SESSION_SECRET is not set. Sessions will reset when the server restarts. Set a long secret in production.',
+      )
+    }
+  }
+  return ephemeralSessionSecret
+}
+
+/** File-backed user store except in tests, where accounts stay in memory. */
+export function persistAuthStore(): boolean {
+  if (process.env.VITEST === 'true') return false
+  if (process.env.AUTH_STORE === 'memory') return false
+  return true
+}
+
+export function authUsersFile(): string {
+  return resolve(process.env.AUTH_USERS_FILE?.trim() || resolve(repoRoot(), 'data/humis-users.json'))
+}
+
+export function authSessionsFile(): string {
+  return resolve(process.env.AUTH_SESSIONS_FILE?.trim() || resolve(repoRoot(), 'data/humis-sessions.json'))
+}
+
+export function authResetFile(): string {
+  return resolve(process.env.AUTH_RESET_FILE?.trim() || resolve(repoRoot(), 'data/humis-reset-tokens.json'))
+}
+
+/**
+ * Public URL of the HUMIS app, used only to build password-reset links.
+ * In local development this is the Vite UI (port 5417), not the API port.
+ */
+export function appPublicUrl(): string {
+  const fromEnv = (process.env.APP_PUBLIC_URL ?? process.env.APP_BASE_URL ?? '').trim()
+  if (fromEnv) return fromEnv.replace(/\/$/, '')
+  return 'http://127.0.0.1:5417'
+}
+
+export function smtpConfig():
+  | { host: string; port: number; secure: boolean; user: string; pass: string; from: string }
+  | undefined {
+  const host = (process.env.SMTP_HOST ?? '').trim()
+  if (!host) return undefined
+  const port = Number(process.env.SMTP_PORT ?? 587)
+  const user = (process.env.SMTP_USER ?? '').trim()
+  const pass = (process.env.SMTP_PASS ?? '').trim()
+  const from = (process.env.SMTP_FROM ?? process.env.AUTH_MAIL_FROM ?? user).trim()
+  if (!from) return undefined
+  return {
+    host,
+    port: Number.isFinite(port) ? port : 587,
+    secure: process.env.SMTP_SECURE === 'true' || port === 465,
+    user,
+    pass,
+    from,
+  }
 }

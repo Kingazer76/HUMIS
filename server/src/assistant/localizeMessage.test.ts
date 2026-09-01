@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import request from 'supertest'
+import { createAuthedAgent } from '../test/authedAgent.js'
 import { createApp } from '../app.js'
 import { resetPendingConfirmForTests } from './handleMessage.js'
 import { resetFarmSettingsForTests } from '../config/farmSettings.js'
 import { simulatedProvider } from '../providers/index.js'
 
 const app = createApp()
+const agent = await createAuthedAgent(app)
 
 const previousKey = process.env.KHAYA_API_KEY
 
@@ -27,7 +28,7 @@ afterEach(() => {
 
 describe('localized assistant chat', () => {
   it('keeps English tank answers on the existing farm path', async () => {
-    const res = await request(app)
+    const res = await agent
       .post('/api/assistant/chat')
       .send({ message: 'How much water is in the tank?', language: 'eng' })
     expect(res.status).toBe(200)
@@ -49,7 +50,7 @@ describe('localized assistant chat', () => {
         return { ok: false, json: async () => ({}) }
       }),
     )
-    const res = await request(app)
+    const res = await agent
       .post('/api/assistant/chat')
       .send({ message: 'Ɛyɛ dɛn wɔ hɔ?', language: 'twi' })
     expect(res.status).toBe(200)
@@ -71,14 +72,14 @@ describe('localized assistant chat', () => {
         return { ok: false, json: async () => ({}) }
       }),
     )
-    const res = await request(app).post('/api/assistant/chat').send({ message: 'Hyɛ ase ma me', language: 'twi' })
+    const res = await agent.post('/api/assistant/chat').send({ message: 'Hyɛ ase ma me', language: 'twi' })
     expect(res.status).toBe(200)
     expect(res.body.action?.ok).toBe(false)
     expect(res.body.action?.reason).toMatch(/manual mode/i)
   })
 
   it('does not bypass the safety gate when Twi is selected and the command is English', async () => {
-    const res = await request(app)
+    const res = await agent
       .post('/api/assistant/chat')
       .send({ message: 'Turn on the pump', language: 'twi' })
     expect(res.status).toBe(200)
@@ -95,7 +96,7 @@ describe('localized assistant chat', () => {
       return { ok: false, json: async () => ({}) }
     })
     vi.stubGlobal('fetch', fetchMock)
-    const res = await request(app)
+    const res = await agent
       .post('/api/assistant/chat')
       .send({ message: 'How much water is in the tank?', language: 'twi' })
     expect(res.status).toBe(200)

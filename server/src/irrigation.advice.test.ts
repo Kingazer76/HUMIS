@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import request from 'supertest'
+import { createAuthedAgent } from './test/authedAgent.js'
 import { createApp } from './app.js'
 import { resetFarmSettingsForTests } from './config/farmSettings.js'
 import { simulatedProvider } from './providers/index.js'
 
 const app = createApp()
+const agent = await createAuthedAgent(app)
 
 describe('GET /api/irrigation/advice', () => {
   beforeEach(() => {
@@ -18,7 +19,7 @@ describe('GET /api/irrigation/advice', () => {
   })
 
   it('returns per-zone advice from the existing irrigation engine', async () => {
-    const res = await request(app).get('/api/irrigation/advice')
+    const res = await agent.get('/api/irrigation/advice')
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body.zones)).toBe(true)
     expect(res.body.zones.length).toBe(2)

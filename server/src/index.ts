@@ -1,4 +1,5 @@
 import { createApp } from './app.js'
+import { bootstrapFirstUser } from './auth/index.js'
 import { HOST, PORT } from './env.js'
 import { startAutoIrrigationLoop } from './irrigation/autoIrrigationLoop.js'
 import { startSimulationEngine } from './simulation/simulationEngine.js'
@@ -10,7 +11,14 @@ startSimulationEngine()
 startAutoIrrigationLoop()
 attachFrontend(app)
 
-app.listen(PORT, HOST, () => {
-  // eslint-disable-next-line no-console
-  console.log(`AquaFlow server listening on http://${HOST}:${PORT}`)
-})
+void bootstrapFirstUser()
+  .catch((err: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error('[HUMIS] Could not create the bootstrap account.', err instanceof Error ? err.message : err)
+  })
+  .finally(() => {
+    app.listen(PORT, HOST, () => {
+      // eslint-disable-next-line no-console
+      console.log(`HUMIS server listening on http://${HOST}:${PORT}`)
+    })
+  })

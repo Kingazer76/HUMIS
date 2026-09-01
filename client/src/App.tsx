@@ -1,13 +1,19 @@
 import { useState, type ReactNode } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { AuthProvider } from '@/auth/AuthProvider'
+import { GuestOnly, RequireAuth } from '@/auth/RequireAuth'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { TabActiveContext } from '@/hooks/tabActivity'
-import { OverviewPage } from '@/pages/OverviewPage'
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { IrrigationPage } from '@/pages/IrrigationPage'
-import { WaterPage } from '@/pages/WaterPage'
+import { LoginPage } from '@/pages/LoginPage'
+import { OverviewPage } from '@/pages/OverviewPage'
 import { PlanningPage } from '@/pages/PlanningPage'
 import { HistoryPage } from '@/pages/HistoryPage'
+import { RegisterPage } from '@/pages/RegisterPage'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { WaterPage } from '@/pages/WaterPage'
 
 const TABS = [
   { path: '/overview', Page: OverviewPage },
@@ -61,9 +67,52 @@ function TabPages() {
 
 function App() {
   return (
-    <AppLayout>
-      <TabPages />
-    </AppLayout>
+    <AuthProvider>
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            <GuestOnly>
+              <LoginPage />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <GuestOnly>
+              <RegisterPage />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <GuestOnly>
+              <ForgotPasswordPage />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <GuestOnly>
+              <ResetPasswordPage />
+            </GuestOnly>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <RequireAuth>
+              <AppLayout>
+                <TabPages />
+              </AppLayout>
+            </RequireAuth>
+          }
+        />
+      </Routes>
+    </AuthProvider>
   )
 }
 

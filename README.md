@@ -71,6 +71,45 @@ npm run dev        # starts both the client (Vite) and the server (Express) toge
 The Vite dev server proxies any `/api/*` request to the Express server, so the browser only
 ever talks to port 5417.
 
+### Sign in
+
+HUMIS now asks you to sign in before opening the farm screens.
+
+1. Open **http://localhost:5417**
+2. Choose **Create an account** the first time
+3. Sign in with that email and password
+
+Your password is stored as a hash on the server, not in the browser. The login cookie is
+httpOnly (the page cannot read it). Farm data is still the shared simulated farm — accounts
+are ready for later multi-user farms, but this build does not split tank/zone data yet.
+
+To create the first user without the Register page, set these in `.env` **before** the first
+start, only if no users exist yet:
+
+```
+AUTH_BOOTSTRAP_EMAIL=farmer@example.com
+AUTH_BOOTSTRAP_PASSWORD=YourPassword1
+AUTH_BOOTSTRAP_NAME=Farm manager
+```
+
+Password reset works end-to-end (one-hour, one-use token). Email sending needs SMTP:
+
+```
+APP_PUBLIC_URL=http://127.0.0.1:5417
+SMTP_HOST=...
+SMTP_PORT=587
+SMTP_USER=...
+SMTP_PASS=...
+SMTP_FROM=HUMIS <noreply@example.com>
+```
+
+If SMTP is not set, HUMIS does not fake an inbox. In local development the reset link is
+printed in the **server** terminal log. Set `AUTH_SESSION_SECRET` in production so people
+stay signed in across server restarts.
+
+`/api/health` stays public. All other `/api` farm routes, including the Assistant, require a
+signed-in session.
+
 ### Voice listening and speaking (Phases 8A–8B)
 
 Typed chat works with no extra setup. Listening and speaking use **one Khaya API key**
@@ -156,5 +195,7 @@ Extra rain is overflow and is not stored. Rainwater is not a separate reserve.
 - [x] **Phase 8C** — Ghanaian-language selector in the existing Assistant. Khaya remains
       ears and mouth (ASR, translation to/from English, TTS). HUMIS remains the farm brain
       and safety gate. Default stays English.
+- [x] **Sign-in** — email/password accounts, httpOnly sessions, protected farm screens and
+      APIs, Settings account card, and password-reset tokens (SMTP optional).
 - [ ] **Phase 9 (deferred)** — real ESP32 hardware integration. Not started; `USE_SIMULATED`
       stays `true` until this is explicitly requested.
