@@ -1,6 +1,7 @@
 import cors from 'cors'
 import express, { type Express } from 'express'
 import { authRouter, requireAuth } from './auth/index.js'
+import { hardwareRouter } from './hardware/routes.js'
 import { assistantRouter, transcribeSpeech } from './routes/assistant.js'
 import { historyRouter } from './routes/history.js'
 import { irrigationRouter } from './routes/irrigation.js'
@@ -39,12 +40,14 @@ export function createApp(): Express {
     transcribeSpeech,
   )
   app.use(express.json({ limit: '256kb' }))
+  app.use(express.urlencoded({ extended: true }))
 
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', service: 'aquaflow-server', timestamp: new Date().toISOString() })
   })
 
   app.use('/api/auth', authRouter)
+  app.use('/api/hardware', hardwareRouter)
   app.use('/api/water', requireAuth, waterRouter)
   app.use('/api/sources', requireAuth, sourcesRouter)
   app.use('/api/zones', requireAuth, zonesRouter)

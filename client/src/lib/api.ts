@@ -1,6 +1,7 @@
 import type {
   AssistantChatResponse,
   FarmLocation,
+  HardwareCalibration,
   HistorySnapshot,
   IrrigationActionResult,
   IrrigationAdviceSnapshot,
@@ -83,6 +84,10 @@ export const api = {
   restoreTankDefaults: () => postJson<SettingsActionResult>('/api/settings/tank/defaults'),
   saveLocation: (location: FarmLocation) => putJson<SettingsActionResult>('/api/settings/location', location),
   restoreLocationDefaults: () => postJson<SettingsActionResult>('/api/settings/location/defaults'),
+  saveHardwareCalibration: (calibration: HardwareCalibration) =>
+    putJson<SettingsActionResult>('/api/settings/hardware-calibration', calibration),
+  restoreHardwareCalibrationDefaults: () =>
+    postJson<SettingsActionResult>('/api/settings/hardware-calibration/defaults'),
   saveZone: (
     zoneId: string,
     body: {

@@ -11,9 +11,9 @@ import type {
 
 /**
  * Everything the rest of AquaFlow knows about "the farm's hardware" goes
- * through this interface. `SimulatedDeviceProvider` (Phase 1) and
- * `ESP32DeviceProvider` (stub now, real in Phase 9) both implement
- * it, so nothing above this layer needs to know which one is active.
+ * through this interface. `SimulatedDeviceProvider` (practice farm) and
+ * `ESP32DeviceProvider` (real board) both implement it, so nothing above
+ * this layer needs to know which one is active.
  *
  * IMPORTANT: this interface only ever *reports* state and *requests*
  * actuator changes. It is not where irrigation decisions are made — that

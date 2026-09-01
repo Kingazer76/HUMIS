@@ -1,7 +1,7 @@
 import type { IrrigationActionResult, IrrigationZone, OperationMode } from '@aquaflow/shared'
 import { getTankConfig } from '../config/farmSettings.js'
 import { historyLog, zoneToHistoryInput } from '../history/historyLog.js'
-import { deviceProvider, simulatedProvider } from '../providers/index.js'
+import { deviceProvider, getAccountingProvider } from '../providers/index.js'
 
 /**
  * Minimum time a zone must stay in its current state before it can be
@@ -123,7 +123,7 @@ export const safetyController = {
           : 'Automatic stop — soil moisture reached target maximum'
 
     if (updatedZone) {
-      const usedSinceStartL = simulatedProvider?.getCumulativeUsedByZoneL(zoneId) ?? 0
+      const usedSinceStartL = getAccountingProvider()?.getCumulativeUsedByZoneL(zoneId) ?? 0
       const tank = await deviceProvider.getTankLevel()
       historyLog.recordIrrigationEvent({
         zone: zoneToHistoryInput(updatedZone, usedSinceStartL),

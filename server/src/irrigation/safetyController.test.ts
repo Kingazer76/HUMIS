@@ -115,6 +115,8 @@ vi.mock('../providers/index.js', () => ({
     return fakeProvider
   },
   simulatedProvider: null,
+  esp32Provider: null,
+  getAccountingProvider: () => null,
 }))
 
 describe('safetyController', () => {

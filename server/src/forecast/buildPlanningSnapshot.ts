@@ -1,6 +1,6 @@
 import type { PlanningSnapshot } from '@aquaflow/shared'
 import { getTankConfig } from '../config/farmSettings.js'
-import { deviceProvider, simulatedProvider } from '../providers/index.js'
+import { deviceProvider, getAccountingProvider } from '../providers/index.js'
 import {
   emptyRollingWindow,
   estimateSevenDayAverageL,
@@ -16,7 +16,7 @@ import { getForecastSafely, toDemandAdjustment } from './weatherProvider.js'
  */
 export async function buildPlanningSnapshot(): Promise<PlanningSnapshot> {
   const tank = await deviceProvider.getTankLevel()
-  const window = simulatedProvider?.getRollingConsumptionWindow() ?? emptyRollingWindow()
+  const window = getAccountingProvider()?.getRollingConsumptionWindow() ?? emptyRollingWindow()
   const dailyConsumptionL = estimateSevenDayAverageL(window)
   const forecast = await getForecastSafely()
   const weatherAdjustment = forecast ? toDemandAdjustment(forecast) : null

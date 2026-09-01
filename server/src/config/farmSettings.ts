@@ -1,9 +1,15 @@
-import type { FarmLocation, TankConfig } from '@aquaflow/shared'
+import {
+  DEFAULT_HARDWARE_CALIBRATION,
+  type FarmLocation,
+  type HardwareCalibration,
+  type TankConfig,
+} from '@aquaflow/shared'
 import { readFarmLocationFromEnv } from '../env.js'
 import { FARM_LOCATION as DEFAULT_FARM_LOCATION, TANK_CONFIG as DEFAULT_TANK_CONFIG } from './seedData.js'
 
 let tankConfig: TankConfig = { ...DEFAULT_TANK_CONFIG }
 let farmLocation: FarmLocation = readFarmLocationFromEnv() ?? { ...DEFAULT_FARM_LOCATION }
+let hardwareCalibration: HardwareCalibration = { ...DEFAULT_HARDWARE_CALIBRATION }
 
 export function getTankConfig(): TankConfig {
   return { ...tankConfig }
@@ -19,6 +25,14 @@ export function getFarmLocation(): FarmLocation {
 
 export function getDefaultFarmLocation(): FarmLocation {
   return { ...DEFAULT_FARM_LOCATION }
+}
+
+export function getHardwareCalibration(): HardwareCalibration {
+  return { ...hardwareCalibration }
+}
+
+export function getDefaultHardwareCalibration(): HardwareCalibration {
+  return { ...DEFAULT_HARDWARE_CALIBRATION }
 }
 
 export type TankSettingsResult =
@@ -128,8 +142,105 @@ export function restoreDefaultFarmLocation(): { ok: true; reason: string; locati
   }
 }
 
+export type HardwareCalibrationResult =
+  | { ok: true; reason: string; calibration: HardwareCalibration }
+  | { ok: false; reason: string }
+
+function asNumber(value: unknown): number {
+  return Number(value)
+}
+
+function asBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') return value
+  if (value === 1 || value === '1' || value === 'true') return true
+  if (value === 0 || value === '0' || value === 'false') return false
+  return fallback
+}
+
+/**
+ * Empty/full distances and soil dry/wet numbers belong here — next to
+ * tank size — so HUMIS does not grow a second settings system.
+ */
+export function validateHardwareCalibration(input: {
+  tankEmptyDistanceCm?: unknown
+  tankFullDistanceCm?: unknown
+  soilDryAdc?: unknown
+  soilWetAdc?: unknown
+  relayActiveHigh?: unknown
+  maxPumpOnSeconds?: unknown
+}): HardwareCalibrationResult {
+  const tankEmptyDistanceCm = asNumber(input.tankEmptyDistanceCm)
+  const tankFullDistanceCm = asNumber(input.tankFullDistanceCm)
+  const soilDryAdc = asNumber(input.soilDryAdc)
+  const soilWetAdc = asNumber(input.soilWetAdc)
+  const relayActiveHigh = asBoolean(input.relayActiveHigh, hardwareCalibration.relayActiveHigh)
+  const maxPumpOnSeconds = asNumber(input.maxPumpOnSeconds)
+
+  if (!Number.isFinite(tankEmptyDistanceCm) || tankEmptyDistanceCm < 2 || tankEmptyDistanceCm > 400) {
+    return { ok: false, reason: 'Empty-tank distance must be between 2 and 400 centimetres.' }
+  }
+  if (!Number.isFinite(tankFullDistanceCm) || tankFullDistanceCm < 2 || tankFullDistanceCm > 400) {
+    return { ok: false, reason: 'Full-tank distance must be between 2 and 400 centimetres.' }
+  }
+  if (tankEmptyDistanceCm <= tankFullDistanceCm) {
+    return {
+      ok: false,
+      reason: 'Empty-tank distance must be bigger than full-tank distance. The sensor sits above the water, so empty is farther away.',
+    }
+  }
+  if (!Number.isFinite(soilDryAdc) || soilDryAdc < 0 || soilDryAdc > 4095) {
+    return { ok: false, reason: 'Dry-soil number must be between 0 and 4095.' }
+  }
+  if (!Number.isFinite(soilWetAdc) || soilWetAdc < 0 || soilWetAdc > 4095) {
+    return { ok: false, reason: 'Wet-soil number must be between 0 and 4095.' }
+  }
+  if (soilDryAdc === soilWetAdc) {
+    return { ok: false, reason: 'Dry-soil and wet-soil numbers must be different so HUMIS can tell them apart.' }
+  }
+  if (!Number.isFinite(maxPumpOnSeconds) || maxPumpOnSeconds < 1 || maxPumpOnSeconds > 300) {
+    return { ok: false, reason: 'The pump time limit must be between 1 and 300 seconds.' }
+  }
+
+  return {
+    ok: true,
+    reason: 'Hardware calibration saved.',
+    calibration: {
+      tankEmptyDistanceCm,
+      tankFullDistanceCm,
+      soilDryAdc,
+      soilWetAdc,
+      relayActiveHigh,
+      maxPumpOnSeconds: Math.round(maxPumpOnSeconds),
+    },
+  }
+}
+
+export function applyHardwareCalibration(input: {
+  tankEmptyDistanceCm?: unknown
+  tankFullDistanceCm?: unknown
+  soilDryAdc?: unknown
+  soilWetAdc?: unknown
+  relayActiveHigh?: unknown
+  maxPumpOnSeconds?: unknown
+}): HardwareCalibrationResult {
+  const result = validateHardwareCalibration(input)
+  if (!result.ok) return result
+  hardwareCalibration = result.calibration
+  return result
+}
+
+export function restoreDefaultHardwareCalibration(): HardwareCalibrationResult {
+  hardwareCalibration = { ...DEFAULT_HARDWARE_CALIBRATION }
+  return {
+    ok: true,
+    reason: 'Hardware calibration restored to the starter numbers. Measure your tank and soil before using the real pump.',
+    calibration: getHardwareCalibration(),
+  }
+}
+
 /** Test isolation — the live farm config is process-wide, like the simulation. */
 export function resetFarmSettingsForTests(): void {
   tankConfig = { ...DEFAULT_TANK_CONFIG }
   farmLocation = { ...DEFAULT_FARM_LOCATION }
+  hardwareCalibration = { ...DEFAULT_HARDWARE_CALIBRATION }
 }

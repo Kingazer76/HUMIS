@@ -2,8 +2,9 @@
 
 AquaFlow is a low-cost smart water-management system for farms in Ghana. It helps
 farmers monitor water, manage irrigation, conserve water, and predict shortages.
-Later phases add a Ghanaian-language assistant; this repository is still
-simulation-based.
+The website still starts on a **practice farm** (`USE_SIMULATED=true`). A real
+ESP32 can already talk to HUMIS for tank distance, Zone A soil, and the pump.
+Leave the practice farm on until that board has been tested.
 
 V3 combines:
 
@@ -107,8 +108,9 @@ If SMTP is not set, HUMIS does not fake an inbox. In local development the reset
 printed in the **server** terminal log. Set `AUTH_SESSION_SECRET` in production so people
 stay signed in across server restarts.
 
-`/api/health` stays public. All other `/api` farm routes, including the Assistant, require a
-signed-in session.
+`/api/health` stays public. ESP32 hardware routes under `/api/hardware` use
+`HUMIS_HARDWARE_KEY` instead of a farmer login. All other `/api` farm routes,
+including the Assistant, require a signed-in session.
 
 ### Voice listening and speaking (Phases 8A–8B)
 
@@ -163,12 +165,51 @@ npm test --workspace server
 On Render, use a **Web Service** with the root of this repo. Build `npm install && npm run build`, start `npm start`. Set `USE_SIMULATED=true`. Typed assistant works without Khaya. For voice, set `KHAYA_API_KEY` in the Render dashboard Environment page — not in `render.yaml`.
 
 Simulation state and Settings live in memory inside the Express process. Restarting the server
-resets the farm, including tank size, field setup, and farm location. Weather planning uses
+resets the farm, including tank size, field setup, farm location, and hardware calibration. Weather planning uses
 Open-Meteo (no API key) at the farm's configured coordinates. If the forecast is missing,
 returns nothing, or throws, planning still returns a valid days-remaining / shortage result
-from tank level and usage. The farm rain sensor used for irrigation stays simulated.
-When that sensor detects rain, AquaFlow estimates rainwater inflow into the **main tank**.
+from tank level and usage. The farm rain sensor used for irrigation stays simulated until a
+rain GPIO is assigned. When that sensor detects rain, AquaFlow estimates rainwater inflow into the **main tank**.
 Extra rain is overflow and is not stored. Rainwater is not a separate reserve.
+
+## Real ESP32 board (Phase 9)
+
+The dashboard, irrigation brain, safety gate, Assistant, and practice farm are unchanged.
+The ESP32 is only a hardware endpoint: it senses, reports, receives a command, and moves the relay.
+
+**Default stays the practice farm.** `USE_SIMULATED=true` until you have tested the real board.
+
+### What is wired today
+
+| Device | GPIO |
+|---|---|
+| HC-SR04 TRIG | 5 |
+| HC-SR04 ECHO | 18 |
+| Zone A soil analog | 34 |
+| Pump relay signal | 26 |
+
+Not wired yet (placeholders only, no fake readings): rain sensor, flow in, flow out, Zone A valve, Zone B valve, second soil probe.
+
+Zone A's soil probe is GPIO 34. Zone B keeps a practice-farm soil number until a second probe exists. HUMIS does not copy Zone A onto Zone B. There is one physical pump. Valve commands stay off until valve GPIOs are assigned.
+
+### Board talk
+
+1. Put a long secret in `.env` as `HUMIS_HARDWARE_KEY` and restart HUMIS.
+2. The ESP32 POSTs readings to `/api/hardware/telemetry?key=...`
+3. The ESP32 GETs `/api/hardware/command?key=...` (JSON or `format=csv`)
+4. HUMIS converts distance → tank litres and soil ADC → Zone A percent using the numbers on the Settings tab.
+
+PictoBlox block-by-block firmware: `hardware/pictoblox/HUMIS-ESP32-firmware.md`.
+
+### Switch from practice farm to real board
+
+1. Confirm Settings → **Real pump and sensors** shows the board is sending readings.
+2. Enter your own empty/full tank distances and dry/wet soil numbers. Do not keep the starter 100 cm / 20 cm unless you measured them.
+3. Bench-test the pump with the hardware key while `USE_SIMULATED=true` so a website watering click cannot start the real pump.
+4. Set `USE_SIMULATED=false` in `.env`.
+5. Restart HUMIS.
+
+Until step 4, watering on the website still drives the practice farm only.
 
 ## Project status
 
@@ -197,5 +238,7 @@ Extra rain is overflow and is not stored. Rainwater is not a separate reserve.
       and safety gate. Default stays English.
 - [x] **Sign-in** — email/password accounts, httpOnly sessions, protected farm screens and
       APIs, Settings account card, and password-reset tokens (SMTP optional).
-- [ ] **Phase 9 (deferred)** — real ESP32 hardware integration. Not started; `USE_SIMULATED`
-      stays `true` until this is explicitly requested.
+- [x] **Phase 9** — ESP32 hardware framework behind the existing `DeviceProvider`. Practice
+      farm stays the default (`USE_SIMULATED=true`). Real tank distance, Zone A soil, and
+      the shared pump are wired. Rain, flow, valves, and a second soil probe are placeholders
+      until GPIOs are assigned.

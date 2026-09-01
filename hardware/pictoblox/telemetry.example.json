@@ -1,0 +1,9 @@
+{
+  "tankDistanceCm": 42.0,
+  "soilAdc": 1800,
+  "pumpIsOn": false,
+  "rainIsWet": null,
+  "flowInHz": null,
+  "flowOutHz": null,
+  "ok": true
+}

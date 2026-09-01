@@ -2,12 +2,14 @@ import { createApp } from './app.js'
 import { bootstrapFirstUser } from './auth/index.js'
 import { HOST, PORT } from './env.js'
 import { startAutoIrrigationLoop } from './irrigation/autoIrrigationLoop.js'
+import { startHardwareEngine } from './hardware/hardwareEngine.js'
 import { startSimulationEngine } from './simulation/simulationEngine.js'
 import { attachFrontend } from './serveFrontend.js'
 
 const app = createApp()
 
 startSimulationEngine()
+startHardwareEngine()
 startAutoIrrigationLoop()
 attachFrontend(app)
 

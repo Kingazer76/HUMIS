@@ -1,0 +1,6 @@
+{
+  "pump": 0,
+  "valveA": 0,
+  "valveB": 0,
+  "maxPumpOnSeconds": 30
+}

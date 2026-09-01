@@ -20,3 +20,9 @@ export const deviceProvider: DeviceProvider = USE_SIMULATED
  */
 export const simulatedProvider =
   deviceProvider instanceof SimulatedDeviceProvider ? deviceProvider : null
+
+export const esp32Provider = deviceProvider instanceof ESP32DeviceProvider ? deviceProvider : null
+
+export function getAccountingProvider(): SimulatedDeviceProvider | ESP32DeviceProvider | null {
+  return simulatedProvider ?? esp32Provider
+}

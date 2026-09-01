@@ -386,6 +386,64 @@ export interface HistorySnapshot {
  * Response shape for GET /api/settings. Tank numbers and zone configs are
  * the live farm settings (in-memory while the server is running).
  */
+/**
+ * Numbers HUMIS uses to turn raw ESP32 readings into tank litres and
+ * soil-wetness percent. Empty/full distances are centimetres from the
+ * ultrasonic sensor to the water. Soil numbers are the analog reading
+ * (ADC) when soil is dry vs soaked. Do not invent tank size here —
+ * tank capacity stays in `TankConfig`.
+ */
+export interface HardwareCalibration {
+  /** Distance (cm) when the tank is empty — usually the larger number. */
+  tankEmptyDistanceCm: number
+  /** Distance (cm) when the tank is full — usually the smaller number. */
+  tankFullDistanceCm: number
+  /** Analog reading when Zone A soil is dry. */
+  soilDryAdc: number
+  /** Analog reading when Zone A soil is soaked. */
+  soilWetAdc: number
+  /**
+   * When true, GPIO 26 goes HIGH (3.3V) to turn the pump ON.
+   * When false, GPIO 26 goes LOW (0V) to turn the pump ON (active-low relay).
+   */
+  relayActiveHigh: boolean
+  /** Longest the ESP32 may keep the pump on before it turns itself off. */
+  maxPumpOnSeconds: number
+}
+
+export const DEFAULT_HARDWARE_CALIBRATION: HardwareCalibration = {
+  tankEmptyDistanceCm: 100,
+  tankFullDistanceCm: 20,
+  soilDryAdc: 3000,
+  soilWetAdc: 1200,
+  relayActiveHigh: true,
+  maxPumpOnSeconds: 30,
+}
+
+/** Confirmed GPIOs vs pins we have not wired yet. Null means not connected. */
+export interface HardwarePinMap {
+  ultrasonicTrig: number
+  ultrasonicEcho: number
+  soilAdcZoneA: number
+  pumpRelay: number
+  rainSensor: number | null
+  flowIn: number | null
+  flowOut: number | null
+  zoneAValve: number | null
+  zoneBValve: number | null
+  secondSoil: number | null
+}
+
+/** How the ESP32 board is talking to HUMIS right now. */
+export interface HardwareLinkStatus {
+  /** True while the on-screen farm is still the practice (simulated) farm. */
+  useSimulated: boolean
+  lastTelemetryAt: string | null
+  lastTelemetryAgeMs: number | null
+  boardHeard: boolean
+  pins: HardwarePinMap
+}
+
 export interface SettingsSnapshot {
   tank: TankConfig
   tankDefaults: TankConfig
@@ -394,6 +452,9 @@ export interface SettingsSnapshot {
   zones: IrrigationZone[]
   crops: CropProfile[]
   soils: SoilType[]
+  hardwareCalibration: HardwareCalibration
+  hardwareCalibrationDefaults: HardwareCalibration
+  hardware: HardwareLinkStatus
 }
 
 /**
@@ -407,6 +468,7 @@ export interface SettingsActionResult {
   tank?: TankConfig
   location?: FarmLocation
   zone?: IrrigationZoneConfig
+  hardwareCalibration?: HardwareCalibration
 }
 
 /** Response shape for POST /api/assistant/chat. */
@@ -454,4 +516,4 @@ export {
 } from './speech.js'
 export type { AssistantLanguageConfig, AssistantLanguageId, KhayaLanguageCode } from './speech.js'
 
-export const AQUAFLOW_SHARED_VERSION = '0.8.0'
+export const AQUAFLOW_SHARED_VERSION = '0.9.0'

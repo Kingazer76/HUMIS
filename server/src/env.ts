@@ -37,10 +37,10 @@ function loadLocalEnvFile() {
 loadLocalEnvFile()
 
 /**
- * Centralized env var reads. `USE_SIMULATED` stays `true` for the whole
- * build until real ESP32 hardware integration is explicitly requested
- * (Phase 9) — nothing else in the codebase should read `process.env`
- * directly for this flag.
+ * Centralized env var reads. `USE_SIMULATED` stays `true` until the real
+ * ESP32 has been tested. Set `USE_SIMULATED=false` only after the board
+ * is posting live readings. Nothing else should read this flag from
+ * `process.env` directly.
  */
 export const USE_SIMULATED = (process.env.USE_SIMULATED ?? 'true') !== 'false'
 
@@ -177,4 +177,13 @@ export function smtpConfig():
     pass,
     from,
   }
+}
+
+/**
+ * Shared secret for ESP32 / PictoBlox HTTP. Not a farmer login cookie.
+ * The board sends it as `X-HUMIS-Hardware-Key` or `?key=`.
+ */
+export function getHardwareKey(): string {
+  loadLocalEnvFile()
+  return (process.env.HUMIS_HARDWARE_KEY ?? '').trim()
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CloudSun, Database, Power, Sprout } from '@/lib/icons'
+import { CloudSun, Cpu, Database, Power, Sprout } from '@/lib/icons'
 import type { OperationMode, SettingsSnapshot, WaterSource } from '@aquaflow/shared'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { SectionCard } from '@/components/shared/SectionCard'
 import { MoreDetails, SettingHint } from '@/components/settings/MoreDetails'
 import { TankConfigForm } from '@/components/settings/TankConfigForm'
+import { HardwareCalibrationForm } from '@/components/settings/HardwareCalibrationForm'
 import { FarmLocationForm } from '@/components/settings/FarmLocationForm'
 import { ZoneSettingsList } from '@/components/settings/ZoneSettingsList'
 import { AccountCard } from '@/components/settings/AccountCard'
@@ -188,6 +189,25 @@ export function SettingsPage() {
             </p>
           </MoreDetails>
         </div>
+      </SectionCard>
+
+      <SectionCard
+        icon={<Cpu className="h-4 w-4" />}
+        title="Real pump and sensors"
+        description="Teach HUMIS how to read your tank stick and soil probe. The practice farm stays on until you switch the server to real hardware."
+      >
+        {data ? (
+          <HardwareCalibrationForm
+            key={`${data.hardwareCalibration.tankEmptyDistanceCm}-${data.hardwareCalibration.tankFullDistanceCm}-${data.hardwareCalibration.soilDryAdc}-${data.hardwareCalibration.soilWetAdc}-${data.hardwareCalibration.relayActiveHigh}-${data.hardwareCalibration.maxPumpOnSeconds}`}
+            calibration={data.hardwareCalibration}
+            hardware={data.hardware}
+            onSaved={load}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {loading ? 'Loading sensor numbers…' : error}
+          </p>
+        )}
       </SectionCard>
 
       <SectionCard

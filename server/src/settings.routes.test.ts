@@ -254,6 +254,27 @@ describe('GET/PUT /api/settings', () => {
     expect(restored.body.tank).toEqual(TANK_CONFIG)
   })
 
+  it('saves hardware calibration next to tank settings', async () => {
+    const saved = await agent.put('/api/settings/hardware-calibration').send({
+      tankEmptyDistanceCm: 90,
+      tankFullDistanceCm: 18,
+      soilDryAdc: 3200,
+      soilWetAdc: 1100,
+      relayActiveHigh: false,
+      maxPumpOnSeconds: 45,
+    })
+    expect(saved.status).toBe(200)
+    expect(saved.body.ok).toBe(true)
+    expect(saved.body.hardwareCalibration.relayActiveHigh).toBe(false)
+    expect(saved.body.hardwareCalibration.maxPumpOnSeconds).toBe(45)
+
+    const res = await agent.get('/api/settings')
+    expect(res.body.hardwareCalibration.tankEmptyDistanceCm).toBe(90)
+    expect(res.body.hardware.useSimulated).toBe(true)
+    expect(res.body.hardware.pins.pumpRelay).toBe(26)
+    expect(res.body.hardware.pins.rainSensor).toBeNull()
+  })
+
   it('saves a farm location used by the weather forecast', async () => {
     const saved = await agent.put('/api/settings/location').send({
       latitude: 5.55,
