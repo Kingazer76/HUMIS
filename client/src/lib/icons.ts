@@ -16,6 +16,7 @@ export { default as ArrowDown } from 'lucide-react/dist/esm/icons/arrow-down.mjs
 export { default as ArrowUp } from 'lucide-react/dist/esm/icons/arrow-up.mjs'
 export { default as CalendarDays } from 'lucide-react/dist/esm/icons/calendar-days.mjs'
 export { default as CloudRain } from 'lucide-react/dist/esm/icons/cloud-rain.mjs'
+export { default as CloudSun } from 'lucide-react/dist/esm/icons/cloud-sun.mjs'
 export { default as Cpu } from 'lucide-react/dist/esm/icons/cpu.mjs'
 export { default as Database } from 'lucide-react/dist/esm/icons/database.mjs'
 export { default as Droplets } from 'lucide-react/dist/esm/icons/droplets.mjs'
