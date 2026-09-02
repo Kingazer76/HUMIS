@@ -1,6 +1,5 @@
 import {
   ASSISTANT_LANGUAGE_STORAGE_KEY,
-  DEFAULT_ASSISTANT_LANGUAGE,
   resolveAssistantLanguage,
   type AssistantLanguageId,
 } from '@aquaflow/shared'

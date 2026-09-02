@@ -1,12 +1,25 @@
 # One always-on Node service: built UI + /api + simulation loops.
-# Render Blueprint — you can also enter the same settings in the dashboard.
+# Render Blueprint — connect a GitHub copy of this repo, or enter the same
+# settings in the Render dashboard.
+#
+# The public website stays on the practice farm. Do not set USE_SIMULATED=false
+# here. A live URL must not drive a real pump until the ESP32 has been tested.
+#
+# Vite and TypeScript are install-time build tools. Render's default
+# NODE_ENV=production install skips them unless --include=dev is used.
 services:
   - type: web
     name: aquaflow
     runtime: node
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: HOST
+        value: "0.0.0.0"
       - key: USE_SIMULATED
         value: "true"
+      - key: AUTH_SESSION_SECRET
+        generateValue: true

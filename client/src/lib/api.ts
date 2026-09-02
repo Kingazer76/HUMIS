@@ -172,7 +172,7 @@ export const api = {
         if (blob.size < 12) throw new Error(VOICE_MESSAGES.speakFailed)
         return blob
       }
-      let reason = VOICE_MESSAGES.speakFailed
+      let reason: string = VOICE_MESSAGES.speakFailed
       if (type.includes('json')) {
         try {
           const body = (await res.json()) as TextToSpeechErrorResponse

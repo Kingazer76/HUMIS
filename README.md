@@ -156,16 +156,49 @@ npm run build      # production UI + server typecheck
 npm start          # one process: UI + /api + farm simulation (uses PORT if set)
 ```
 
-Run tests:
+Run checks:
 
 ```bash
-npm test --workspace server
+npm run build    # production UI + server typecheck
+npm run lint
+npm test
 ```
 
-On Render, use a **Web Service** with the root of this repo. Build `npm install && npm run build`, start `npm start`. Set `USE_SIMULATED=true`. Typed assistant works without Khaya. For voice, set `KHAYA_API_KEY` in the Render dashboard Environment page — not in `render.yaml`.
+## Publish HUMIS (Render)
+
+HUMIS is already one Node website: `npm run build`, then `npm start`. That is the same
+command pair used on Render. The existing `render.yaml` Blueprint matches this.
+
+This cloud workspace cannot log into Render or GitHub for you. To put HUMIS on a
+durable public URL:
+
+1. Create a GitHub (or GitLab) repository from this project if you have not already.
+2. On [Render](https://render.com), create a **Web Service** from that repository, or apply `render.yaml` as a Blueprint.
+3. Build command: `npm install --include=dev && npm run build`
+4. Start command: `npm start`
+5. Health check path: `/api/health`
+6. Set these in the Render **Environment** page (names only — paste values in Render, never in git):
+   - `USE_SIMULATED` = `true` (keep the practice farm on the public site)
+   - `AUTH_SESSION_SECRET` = a long random string (Blueprint can generate this)
+   - `APP_PUBLIC_URL` = your live `https://…` URL (needed for password-reset emails)
+   - `KHAYA_API_KEY` = optional; typed Assistant works without it
+   - `HUMIS_HARDWARE_KEY` = optional; only if a real board will call this server
+7. Do **not** put secrets in `render.yaml` or in any `VITE_` variable.
+
+`--include=dev` is required because Vite and TypeScript are install-time build tools.
+Render's default production install would skip them and the build would fail.
+
+The public site stays on the **practice farm**. Do not set `USE_SIMULATED=false` on
+Render until the ESP32 has been tested. A public website must not start a real pump
+by default.
+
+Typed assistant works without Khaya. For voice, set `KHAYA_API_KEY` in the Render
+dashboard Environment page — not in `render.yaml`.
 
 Simulation state and Settings live in memory inside the Express process. Restarting the server
-resets the farm, including tank size, field setup, farm location, and hardware calibration. Weather planning uses
+resets the farm, including tank size, field setup, farm location, and hardware calibration.
+Farmer accounts are saved under `data/` on disk. A typical Render disk is wiped on restart
+unless you later attach a persistent disk — this release does not add a new database. Weather planning uses
 Open-Meteo (no API key) at the farm's configured coordinates. If the forecast is missing,
 returns nothing, or throws, planning still returns a valid days-remaining / shortage result
 from tank level and usage. The farm rain sensor used for irrigation stays simulated until a
