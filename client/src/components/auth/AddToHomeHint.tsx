@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
-
 function isStandaloneApp(): boolean {
+  if (typeof window === 'undefined') return false
   if (window.matchMedia('(display-mode: standalone)').matches) return true
   const safari = window.navigator as Navigator & { standalone?: boolean }
   return safari.standalone === true
@@ -11,13 +10,7 @@ function isStandaloneApp(): boolean {
  * from a home-screen icon. Does not change the farm screens.
  */
 export function AddToHomeHint() {
-  const [show, setShow] = useState(false)
-
-  useEffect(() => {
-    setShow(!isStandaloneApp())
-  }, [])
-
-  if (!show) return null
+  if (isStandaloneApp()) return null
 
   return (
     <p className="mx-auto mt-4 max-w-sm text-center text-xs leading-relaxed text-muted-foreground">
