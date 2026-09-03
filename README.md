@@ -56,6 +56,19 @@ Planning advice text. Pump and valves still change only through `safetyControlle
 
 npm workspaces tie the three packages together — there's no separate build tooling beyond npm.
 
+## HUMIS on your phone
+
+HUMIS is still the same website. On a phone you can add it to the home screen so it
+opens like an app — same tabs, same practice farm, same safety gate.
+
+1. Open HUMIS in the phone browser (Safari on iPhone, Chrome on Android).
+2. Open the browser menu.
+3. Tap **Add to Home Screen** (iPhone) or **Install app** / **Add to Home screen** (Android).
+4. Tap the HUMIS icon.
+
+This is not a separate App Store or Play Store app. Those stores need Apple and
+Google developer accounts. The farm app on your phone is this same HUMIS.
+
 ## Running it locally
 
 Requires Node.js 20+ and npm 10+.

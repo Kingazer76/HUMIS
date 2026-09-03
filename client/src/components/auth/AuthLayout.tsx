@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { AddToHomeHint } from '@/components/auth/AddToHomeHint'
 
 export function AuthLayout({
   title,
@@ -13,7 +14,7 @@ export function AuthLayout({
   footer?: ReactNode
 }) {
   return (
-    <div className="min-h-svh bg-background">
+    <div className="min-h-svh bg-background pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]">
       <div className="mx-auto grid min-h-svh max-w-5xl lg:grid-cols-[minmax(0,18rem)_minmax(0,24rem)] lg:items-center lg:justify-center lg:gap-16 lg:px-8">
         <aside className="hidden px-8 py-10 lg:block">
           <Link to="/login" className="inline-flex items-center gap-3">
@@ -41,6 +42,7 @@ export function AuthLayout({
           </div>
 
           {footer ? <div className="mt-6 text-center text-sm text-muted-foreground">{footer}</div> : null}
+          <AddToHomeHint />
         </div>
       </div>
     </div>
