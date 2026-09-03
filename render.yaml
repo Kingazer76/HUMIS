@@ -1,16 +1,16 @@
-# One always-on Node service: built UI + /api + simulation loops.
-# Render Blueprint — connect a GitHub copy of this repo, or enter the same
-# settings in the Render dashboard.
+# Official HUMIS website on Render.
+# One always-on Node service: built UI + /api + practice farm.
 #
-# The public website stays on the practice farm. Do not set USE_SIMULATED=false
-# here. A live URL must not drive a real pump until the ESP32 has been tested.
+# Do not set USE_SIMULATED=false here. A public website must not drive a
+# real pump until the ESP32 has been tested.
 #
 # Vite and TypeScript are install-time build tools. Render's default
 # NODE_ENV=production install skips them unless --include=dev is used.
 services:
   - type: web
-    name: aquaflow
+    name: humis
     runtime: node
+    branch: cursor/humis-production-16f2
     buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
@@ -23,3 +23,10 @@ services:
         value: "true"
       - key: AUTH_SESSION_SECRET
         generateValue: true
+      # Filled in the Render dashboard. Never put real secrets in this file.
+      - key: KHAYA_API_KEY
+        sync: false
+      - key: HUMIS_HARDWARE_KEY
+        sync: false
+      - key: APP_PUBLIC_URL
+        sync: false

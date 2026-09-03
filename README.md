@@ -164,26 +164,34 @@ npm run lint
 npm test
 ```
 
-## Publish HUMIS (Render)
+## Official website (Render)
 
-HUMIS is already one Node website: `npm run build`, then `npm start`. That is the same
-command pair used on Render. The existing `render.yaml` Blueprint matches this.
+HUMIS is already one Node website: `npm run build`, then `npm start`. Render uses
+the same commands. The file `render.yaml` is the official hosting recipe.
 
-This cloud workspace cannot log into Render or GitHub for you. To put HUMIS on a
-durable public URL:
+This workspace cannot log into GitHub or Render for you. Official publish needs
+two actions only you can do:
 
-1. Create a GitHub (or GitLab) repository from this project if you have not already.
-2. On [Render](https://render.com), create a **Web Service** from that repository, or apply `render.yaml` as a Blueprint.
-3. Build command: `npm install --include=dev && npm run build`
-4. Start command: `npm start`
-5. Health check path: `/api/health`
-6. Set these in the Render **Environment** page (names only — paste values in Render, never in git):
-   - `USE_SIMULATED` = `true` (keep the practice farm on the public site)
-   - `AUTH_SESSION_SECRET` = a long random string (Blueprint can generate this)
-   - `APP_PUBLIC_URL` = your live `https://…` URL (needed for password-reset emails)
-   - `KHAYA_API_KEY` = optional; typed Assistant works without it
-   - `HUMIS_HARDWARE_KEY` = optional; only if a real board will call this server
-7. Do **not** put secrets in `render.yaml` or in any `VITE_` variable.
+1. In Cursor, click **Create repo** so HUMIS has a real GitHub repository.
+2. Open [render.com](https://render.com), sign in (GitHub login is easiest), then
+   **New → Blueprint** and connect that repository. Or **New → Web Service** and
+   paste the same settings.
+
+Use this branch: `cursor/humis-production-16f2`
+
+- Build command: `npm install --include=dev && npm run build`
+- Start command: `npm start`
+- Health check path: `/api/health`
+
+Render will ask for these names (paste values only in Render, never in git):
+
+- `USE_SIMULATED` = `true` (keep the practice farm on the public site)
+- `AUTH_SESSION_SECRET` = let Render generate this
+- `APP_PUBLIC_URL` = the live `https://humis.onrender.com` URL Render gives you
+- `KHAYA_API_KEY` = optional; typed Assistant works without it
+- `HUMIS_HARDWARE_KEY` = optional; only if a real board will call this server
+
+Do **not** put secrets in `render.yaml` or in any `VITE_` variable.
 
 `--include=dev` is required because Vite and TypeScript are install-time build tools.
 Render's default production install would skip them and the build would fail.
@@ -194,6 +202,10 @@ by default.
 
 Typed assistant works without Khaya. For voice, set `KHAYA_API_KEY` in the Render
 dashboard Environment page — not in `render.yaml`.
+
+After Render finishes, your official link looks like `https://humis.onrender.com`
+(Render may add extra letters if that name is taken). Send that URL here and this
+workspace can check it.
 
 Simulation state and Settings live in memory inside the Express process. Restarting the server
 resets the farm, including tank size, field setup, farm location, and hardware calibration.
