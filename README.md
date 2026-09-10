@@ -1,302 +1,570 @@
-# AquaFlow
+# HUMIS
 
-AquaFlow is a low-cost smart water-management system for farms in Ghana. It helps
-farmers monitor water, manage irrigation, conserve water, and predict shortages.
-The website still starts on a **practice farm** (`USE_SIMULATED=true`). A real
-ESP32 can already talk to HUMIS for tank distance, Zone A soil, and the pump.
-Leave the practice farm on until that board has been tested.
+**HUMIS — Smart Water Management for Smallholder Farmers**
 
-V3 combines:
+HUMIS is a low-cost smart water-management system designed to help smallholder and open-field farmers in Ghana use limited water more efficiently.
 
-- **V1's water-management foundation** — dashboard, a single main tank as stored water,
-  other sources that can fill that tank, crop-specific irrigation zones, irrigation
-  controls, water-in/stored/used accounting, days-of-water-remaining, and shortage
-  prediction. Rainwater is an incoming source into the main tank, not a second tank.
-- **V2's inclusivity goals** — a chatbot with Ghanaian-language voice support (via Khaya AI),
-  planned for later phases, integrated into the existing dashboard rather than as a separate app.
-- **Real-hardware readiness** — every sensor/actuator interaction goes through a swappable
-  `DeviceProvider`, so a simulated farm today can become a real ESP32-driven farm later
-  without a redesign.
+Instead of relying on guesswork, HUMIS combines water-level information, soil conditions, crop information, growth stage, weather conditions and irrigation history to help farmers make better watering decisions.
 
-This repository is being built in staged phases. **Phases 0–8B are complete.**
-Settings writes live farm numbers. Overview leads with water, crops, weather, shortage,
-days remaining, and watering status. The AquaFlow Assistant in the header can answer
-farm questions, start or stop watering through the same safety gate as the Irrigation tab,
-listen with the microphone, and read new answers out loud when Khaya AI is configured.
+The system is designed around one central principle:
 
-## Why a flow-sensor disclaimer matters
+> **Use the water you have as intelligently as possible.**
 
-AquaFlow tracks two flow figures — **Water IN** and **Water USED** — from configured
-rates in simulation (`configured-rate`). Real flow meters are not connected yet.
-Every screen is built to say so explicitly (e.g. "(estimated)", "(simulated)",
-"(forecast)") rather than presenting an estimate as if it were a real sensor reading.
-Irrigation advice estimates how many litres a field needs; that estimate can later
-be checked against Water USED. AquaFlow does not add a third flow channel.
+HUMIS is currently a working prototype. The public/demo version uses a simulated farm by default, while an ESP32-based hardware system is being developed to connect real sensors and actuators.
 
-## Irrigation decisions
+---
 
-Automatic watering uses crop type, soil type, growth stage, current soil moisture,
-weather/rainfall, and main-tank water. It does not use one farm-wide moisture number
-such as "water if below 35%." Crop coefficients (`Kc`) and allowable depletion (`p`)
-come from FAO-56 where the crop (or a named analog) is listed. Soil water limits
-come from FAO-56 Table 19. Mapping the 0–100 simulated soil probe onto those volumes
-is an AquaFlow assumption, not a laboratory calibration.
+## What HUMIS Does
 
-The same `decideZoneIrrigation` function drives Auto mode and the Irrigation /
-Planning advice text. Pump and valves still change only through `safetyController`.
+HUMIS brings several parts of farm water management into one system:
 
-## Stack
+* Monitors the main water tank
+* Tracks water entering, stored and used
+* Monitors soil conditions by irrigation zone
+* Uses crop type, soil type and growth stage when making irrigation decisions
+* Considers current and forecast weather conditions
+* Estimates how many days of water remain
+* Predicts potential water shortages
+* Provides irrigation recommendations
+* Controls irrigation through a central safety system
+* Supports manual and automatic watering
+* Provides farm history and planning information
+* Supports a farmer-friendly AI Assistant
+* Supports voice interaction through Khaya AI
+* Is designed to work with real ESP32 hardware
+* Keeps simulated and estimated values clearly labelled rather than presenting them as real measurements
 
-- **`client/`** — React + Vite + TypeScript + Tailwind CSS + shadcn/ui. Renders the six tabs
-  (Overview, Irrigation, Water, Planning, History, Settings) via `react-router-dom`.
-- **`server/`** — Node + Express + TypeScript. Holds the simulation loop, the water/
-  irrigation domain logic, planning/shortage prediction, and any secrets (e.g. the Khaya
-  API key) that must never reach the browser bundle.
-- **`shared/`** — TypeScript types shared between `client` and `server`.
+---
 
-npm workspaces tie the three packages together — there's no separate build tooling beyond npm.
+## The HUMIS Water Model
 
-## HUMIS on your phone
+HUMIS uses **one central main storage tank** as the farm's available stored water.
 
-HUMIS is still the same website. On a phone you can add it to the home screen so it
-opens like an app — same tabs, same practice farm, same safety gate.
+Different sources can supply water to this tank, including:
 
-1. Open HUMIS in the phone browser (Safari on iPhone, Chrome on Android).
-2. Open the browser menu.
-3. Tap **Add to Home Screen** (iPhone) or **Install app** / **Add to Home screen** (Android).
-4. Tap the HUMIS icon.
+* Rainwater harvesting
+* Well/borehole water
+* Reservoir or pond water
+* Other manually configured sources
 
-This is not a separate App Store or Play Store app. Those stores need Apple and
-Google developer accounts. The farm app on your phone is this same HUMIS.
+Irrigation draws water from the **main tank**.
 
-## Running it locally
+Rainwater is therefore treated as an incoming source rather than as a separate storage tank or reserve.
 
-Requires Node.js 20+ and npm 10+.
+The system tracks:
+
+**Water In → Main Tank → Water Used**
+
+This allows HUMIS to reason about how much water is available and how quickly the farm is using it.
+
+---
+
+## Irrigation Intelligence
+
+HUMIS does not rely on a single farm-wide rule such as:
+
+> "Water whenever soil moisture falls below 35%."
+
+Instead, irrigation decisions can consider:
+
+* Crop type
+* Soil type
+* Growth stage
+* Current soil moisture
+* Weather
+* Rainfall
+* Main tank availability
+* Crop water requirements
+* Previous water-management information
+
+The irrigation model uses agricultural parameters such as crop coefficients (`Kc`) and allowable depletion where appropriate.
+
+FAO-56 data is used as a reference for crops and soil-water calculations where applicable.
+
+Because the prototype's soil sensor values are simulated or mapped from sensor readings, the conversion between a 0–100 soil reading and actual soil-water volumes remains an engineering assumption until properly calibrated in the field.
+
+---
+
+## Safety First
+
+All pump and valve actions pass through the same central safety system:
+
+**`safetyController`**
+
+This is important because neither the Irrigation interface nor the AI Assistant should have its own independent path to physical hardware.
+
+The Assistant can request an irrigation action, but it must still pass through the same safety controls used by the rest of HUMIS.
+
+The safety layer is intended to prevent unclear commands or unsafe conditions from directly activating the pump or valves.
+
+---
+
+## Khaya AI Voice Assistant
+
+HUMIS includes a farmer-facing Assistant integrated into the existing application.
+
+The Assistant can:
+
+* Answer questions about the farm
+* Explain current water conditions
+* Provide irrigation-related information
+* Start or stop watering when an appropriate command is given
+* Accept spoken input
+* Read responses aloud
+
+Voice interaction uses **Khaya AI** as the speech layer.
+
+Khaya handles the communication between the farmer's voice and HUMIS. HUMIS remains responsible for the actual farm logic and safety decisions.
+
+The intended language direction includes Ghanaian languages such as:
+
+* Twi
+* Ewe
+* Ga
+* Dagbani
+
+The language layer is designed so that the farmer can communicate naturally while HUMIS continues to use its own internal farm logic.
+
+The microphone uses a **hold-to-speak** interaction rather than continuously listening.
+
+The Assistant moves through states such as:
+
+**Hold to speak → Listening → Thinking → Speaking**
+
+If speech is unclear, HUMIS should ask the farmer to try again or confirm the intended action instead of guessing.
+
+---
+
+## Hardware
+
+HUMIS is designed around an ESP32-based hardware system.
+
+The hardware communicates with the HUMIS server through a `DeviceProvider` architecture. This allows the application to use a simulated farm during development and switch to real hardware without redesigning the farm-management logic.
+
+### Current hardware baseline
+
+| Device             | GPIO |
+| ------------------ | ---: |
+| HC-SR04 TRIG       |    5 |
+| HC-SR04 ECHO       |   18 |
+| Zone A soil sensor |   34 |
+| Rain sensor AO     |   35 |
+| Rain sensor DO     |   32 |
+| Water Flow IN      |   25 |
+| Water Flow OUT     |   27 |
+| Pump relay         |   26 |
+
+The current hardware setup uses:
+
+* ESP32 NodeMCU DevKit V1
+* HC-SR04 ultrasonic tank-level sensor
+* Soil-moisture sensor
+* MH-RD / FC-37 rain sensor
+* YF-S201 water-flow sensors
+* SRD-05VDC-SL-C relay
+* 12V DC pump
+
+A solenoid-valve system is planned as part of the irrigation hardware, but valve GPIO assignments should not be treated as final until the hardware is actually wired and tested.
+
+### Important
+
+The real hardware is **not the default public operating mode**.
+
+HUMIS should remain in:
+
+```text
+USE_SIMULATED=true
+```
+
+until the physical system has been properly tested.
+
+A public website should never be able to accidentally activate a physical pump simply because somebody clicked a button on the demo.
+
+---
+
+## Simulated Farm vs Real Farm
+
+HUMIS deliberately separates the software logic from the physical hardware.
+
+### Simulated mode
+
+The application can run without the ESP32.
+
+This allows:
+
+* UI development
+* Irrigation testing
+* Water-management testing
+* Planning
+* Weather integration
+* Assistant testing
+* Demonstrations
+
+without requiring the physical farm system to be connected.
+
+### Real hardware mode
+
+The ESP32 can provide physical readings and receive approved commands from HUMIS.
+
+The intended architecture is:
+
+**ESP32 → HUMIS server → Farm logic → Safety controller → Hardware command**
+
+The ESP32 should act as the hardware endpoint rather than containing the main farm-management intelligence.
+
+---
+
+## Flow Sensors
+
+HUMIS distinguishes between actual sensor readings and calculated or simulated values.
+
+Water flow is intended to provide information about water entering and being used by the system.
+
+The YF-S201 sensors are assigned to:
+
+* **Water IN — GPIO25**
+* **Water OUT — GPIO27**
+
+These measurements can eventually be used to improve water accounting and help identify abnormal water usage, leaks or system faults.
+
+During development, any value that is simulated or estimated must be clearly labelled rather than presented as a confirmed physical measurement.
+
+---
+
+## Rainwater
+
+Rain is treated as an incoming water source for the **main tank**.
+
+HUMIS does not treat rainwater as a second independent tank.
+
+When rainwater harvesting is active, the system can estimate how much water is entering the main tank.
+
+Water beyond the configured storage capacity is treated as overflow rather than being incorrectly added to the available stored-water figure.
+
+---
+
+## Weather
+
+HUMIS can use weather information for irrigation planning and shortage prediction.
+
+Weather information can help the system determine whether upcoming rainfall may affect irrigation requirements and whether watering should be reconsidered.
+
+The prototype uses Open-Meteo for weather data and does not require an API key for this service.
+
+If weather information is unavailable, HUMIS should still be able to provide basic water-planning information using the available tank and usage data.
+
+---
+
+## Application Structure
+
+The application is divided into three main parts:
+
+### `client/`
+
+The farmer-facing web application.
+
+Built with:
+
+* React
+* Vite
+* TypeScript
+* Tailwind CSS
+* shadcn/ui
+* React Router
+
+The main sections are:
+
+* Overview
+* Irrigation
+* Water
+* Planning
+* History
+* Settings
+
+The Assistant is integrated into the application interface rather than being a separate application.
+
+### `server/`
+
+The backend responsible for:
+
+* Farm simulation
+* Water-management logic
+* Irrigation decisions
+* Planning
+* Shortage prediction
+* Authentication
+* Assistant requests
+* Hardware communication
+* Safety control
+* Server-side secrets
+
+### `shared/`
+
+Shared TypeScript types used by both the client and server.
+
+---
+
+## Authentication
+
+HUMIS includes email/password authentication.
+
+Passwords are stored as hashes on the server rather than in the browser.
+
+Authentication uses server-side sessions with an `httpOnly` cookie.
+
+Password-reset functionality is also included.
+
+The current prototype is not yet a full multi-farm production platform. Accounts exist, but the simulated farm data remains shared rather than being completely separated into independent farms for every account.
+
+---
+
+## Mobile Use
+
+HUMIS is a web application designed to work on phones as well as computers.
+
+On a supported phone, it can be added to the home screen and opened in an app-like manner.
+
+It is still the same HUMIS web application rather than a separate native App Store or Play Store application.
+
+---
+
+## Running HUMIS Locally
+
+HUMIS requires:
+
+* Node.js 20+
+* npm 10+
+
+From the repository root:
 
 ```bash
-npm install        # installs all three workspaces from the repo root
-npm run dev        # starts both the client (Vite) and the server (Express) together
+npm install
+npm run dev
 ```
 
-- Client (the app you open in a browser): **http://localhost:5417**
-- Server (API): **http://localhost:5418/api/health**
-- Planning API: **http://localhost:5418/api/planning**
+The development application runs on:
 
-The Vite dev server proxies any `/api/*` request to the Express server, so the browser only
-ever talks to port 5417.
-
-### Sign in
-
-HUMIS now asks you to sign in before opening the farm screens.
-
-1. Open **http://localhost:5417**
-2. Choose **Create an account** the first time
-3. Sign in with that email and password
-
-Your password is stored as a hash on the server, not in the browser. The login cookie is
-httpOnly (the page cannot read it). Farm data is still the shared simulated farm — accounts
-are ready for later multi-user farms, but this build does not split tank/zone data yet.
-
-To create the first user without the Register page, set these in `.env` **before** the first
-start, only if no users exist yet:
-
-```
-AUTH_BOOTSTRAP_EMAIL=farmer@example.com
-AUTH_BOOTSTRAP_PASSWORD=YourPassword1
-AUTH_BOOTSTRAP_NAME=Farm manager
+```text
+http://localhost:5417
 ```
 
-Password reset works end-to-end (one-hour, one-use token). Email sending needs SMTP:
+The API health endpoint runs on:
 
-```
-APP_PUBLIC_URL=http://127.0.0.1:5417
-SMTP_HOST=...
-SMTP_PORT=587
-SMTP_USER=...
-SMTP_PASS=...
-SMTP_FROM=HUMIS <noreply@example.com>
+```text
+http://localhost:5418/api/health
 ```
 
-If SMTP is not set, HUMIS does not fake an inbox. In local development the reset link is
-printed in the **server** terminal log. Set `AUTH_SESSION_SECRET` in production so people
-stay signed in across server restarts.
+The planning API is available at:
 
-`/api/health` stays public. ESP32 hardware routes under `/api/hardware` use
-`HUMIS_HARDWARE_KEY` instead of a farmer login. All other `/api` farm routes,
-including the Assistant, require a signed-in session.
-
-### Voice listening and speaking (Phases 8A–8B)
-
-Typed chat works with no extra setup. Listening and speaking use **one Khaya API key**
-from https://translation.ghananlp.org for both Automatic Speech Recognition API v3 and
-Text-To-Speech API v2. Copy `.env.example` to `.env` in the repo root (the same folder as
-`package.json`), then fill in:
-
+```text
+http://localhost:5418/api/planning
 ```
+
+The Vite development server proxies `/api/*` requests to the Express server.
+
+---
+
+## Voice Configuration
+
+Typed Assistant functionality does not require Khaya.
+
+Voice functionality requires a Khaya API key stored on the server.
+
+Example:
+
+```env
 KHAYA_API_KEY=your-key
 KHAYA_ASR_LANGUAGE=eng
 KHAYA_TTS_LANGUAGE=eng
 ```
 
-`KHAYA_API_KEY` stays on the server. Never put it in `client/` code, Vite `VITE_` variables,
-Git, or Render Blueprint files. Restart `npm run dev` after editing `.env`. If the key is
-missing, typed chat still works. The microphone may still open, but AquaFlow will not guess
-speech or invent audio — it asks you to type instead. Voice needs an internet connection to
-Khaya; the rest of AquaFlow keeps working if Khaya is unreachable.
+The API key must never be placed in:
 
-On Render, add `KHAYA_API_KEY` under **Environment** in the web service dashboard. Do not
-paste the key into `render.yaml`.
+* Client-side code
+* `VITE_` variables
+* Git
+* `render.yaml`
 
-The plant shows: **Hold to speak**, **Listening**, **Thinking**, then **Speaking**.
-Recognized speech appears in the chat as **You said**, then the same AquaFlow Assistant
-answers it. If the words are unclear, or a control command is missing a clear target
-(for example Khaya heard "comb" instead of "pump"), AquaFlow asks you to try again or
-confirm — it does not guess a farm-status answer, and it does not turn hardware on
-until you clearly confirm. The safety gate still has the last word. Ghanaian-language
-switching is Phase 8C. Only African English (`eng`) is active.
+The exact active language configuration may change as Ghanaian-language support is expanded.
 
-You can also run each side on its own:
+---
 
-```bash
-npm run dev:client   # Vite dev server only
-npm run dev:server   # Express dev server only (auto-restarts on change via tsx watch)
+## Environment
+
+The most important environment settings include:
+
+```env
+USE_SIMULATED=true
+AUTH_SESSION_SECRET=your-secret
+HUMIS_HARDWARE_KEY=your-hardware-key
+KHAYA_API_KEY=your-khaya-key
 ```
 
-Build everything (type-checks + production bundles):
+Keep secrets out of source control.
+
+The public/demo version should remain on the simulated farm until the physical hardware has been properly tested.
+
+---
+
+## Production / Deployment
+
+HUMIS is designed to run as one Node-based web application.
+
+The production process uses:
 
 ```bash
-npm run build      # production UI + server typecheck
-npm start          # one process: UI + /api + farm simulation (uses PORT if set)
+npm run build
+npm start
 ```
 
-Run checks:
+Render can be used to host the application using the repository's deployment configuration.
 
-```bash
-npm run build    # production UI + server typecheck
-npm run lint
-npm test
+The production/demo deployment should keep:
+
+```text
+USE_SIMULATED=true
 ```
 
-## Official website (Render)
+until real hardware testing is complete.
 
-HUMIS is already one Node website: `npm run build`, then `npm start`. Render uses
-the same commands. The file `render.yaml` is the official hosting recipe.
+---
 
-This workspace cannot log into GitHub or Render for you. Official publish needs
-two actions only you can do:
+## Project Status
 
-1. In Cursor, click **Create repo** so HUMIS has a real GitHub repository.
-2. Open [render.com](https://render.com), sign in (GitHub login is easiest), then
-   **New → Blueprint** and connect that repository. Or **New → Web Service** and
-   paste the same settings.
+HUMIS has progressed from an initial smart-water-management concept into a working software and hardware prototype.
 
-Use this branch: `cursor/humis-production-16f2`
+### Completed
 
-- Build command: `npm install --include=dev && npm run build`
-- Start command: `npm start`
-- Health check path: `/api/health`
+* [x] Project architecture
+* [x] Water-management foundation
+* [x] Main tank water accounting
+* [x] Irrigation zones
+* [x] Irrigation decision logic
+* [x] Safety controller
+* [x] Planning and shortage prediction
+* [x] History
+* [x] Settings
+* [x] Farmer-friendly visual interface
+* [x] HUMIS Assistant
+* [x] Voice input
+* [x] Voice output
+* [x] Khaya AI integration
+* [x] Ghanaian-language voice architecture
+* [x] User authentication
+* [x] Password reset
+* [x] ESP32 hardware framework
+* [x] Real tank-level sensing
+* [x] Real soil sensing
+* [x] Pump relay control
+* [x] Rain-sensor integration
+* [x] Flow-sensor hardware integration framework
 
-Render will ask for these names (paste values only in Render, never in git):
+### In development
 
-- `USE_SIMULATED` = `true` (keep the practice farm on the public site)
-- `AUTH_SESSION_SECRET` = let Render generate this
-- `APP_PUBLIC_URL` = the live `https://humis.onrender.com` URL Render gives you
-- `KHAYA_API_KEY` = optional; typed Assistant works without it
-- `HUMIS_HARDWARE_KEY` = optional; only if a real board will call this server
+* [ ] Full field calibration of soil and water measurements
+* [ ] Complete physical irrigation-zone valve system
+* [ ] Expanded physical farm testing
+* [ ] Leak/fault detection using flow information
+* [ ] More robust water-use prediction
+* [ ] Renewable-power integration
+* [ ] Longer-term water-management behaviour analysis
+* [ ] Expanded Ghanaian-language support
+* [ ] Multi-farm data separation
+* [ ] Production database and persistent storage
 
-Do **not** put secrets in `render.yaml` or in any `VITE_` variable.
+---
 
-`--include=dev` is required because Vite and TypeScript are install-time build tools.
-Render's default production install would skip them and the build would fail.
+## Prototype vs Future HUMIS
 
-The public site stays on the **practice farm**. Do not set `USE_SIMULATED=false` on
-Render until the ESP32 has been tested. A public website must not start a real pump
-by default.
+The current HUMIS system should not be confused with the final commercial product.
 
-Typed assistant works without Khaya. For voice, set `KHAYA_API_KEY` in the Render
-dashboard Environment page — not in `render.yaml`.
+The prototype focuses on proving that:
 
-After Render finishes, your official link looks like `https://humis.onrender.com`
-(Render may add extra letters if that name is taken). Send that URL here and this
-workspace can check it.
+1. Farm water information can be brought into one system.
+2. Irrigation decisions can use more than soil moisture alone.
+3. Farmers can understand the information through a simple interface.
+4. An AI voice layer can make the system more accessible.
+5. The same software architecture can operate with simulated data and real hardware.
+6. Physical irrigation actions can be controlled through a central safety layer.
 
-Simulation state and Settings live in memory inside the Express process. Restarting the server
-resets the farm, including tank size, field setup, farm location, and hardware calibration.
-Farmer accounts are saved under `data/` on disk. A typical Render disk is wiped on restart
-unless you later attach a persistent disk — this release does not add a new database. Weather planning uses
-Open-Meteo (no API key) at the farm's configured coordinates. If the forecast is missing,
-returns nothing, or throws, planning still returns a valid days-remaining / shortage result
-from tank level and usage. The farm rain sensor used for irrigation stays simulated until a
-rain GPIO is assigned. When that sensor detects rain, AquaFlow estimates rainwater inflow into the **main tank**.
-Extra rain is overflow and is not stored. Rainwater is not a separate reserve.
+Future versions can expand this foundation with more sensors, better calibration, renewable power, improved prediction, additional languages, larger-scale farm support and deeper analysis of historical water-management behaviour.
 
-## Real ESP32 board (Phase 9)
+---
 
-The dashboard, irrigation brain, safety gate, Assistant, and practice farm are unchanged.
-The ESP32 is only a hardware endpoint: it senses, reports, receives a command, and moves the relay.
+## Recognition
 
-**Default stays the practice farm.** `USE_SIMULATED=true` until you have tested the real board.
+HUMIS was developed as part of the **Emerging Technologies Bootcamp 2026**, a collaboration involving Lancaster University Ghana and Stanbic Bank.
 
-### What is wired today
+HUMIS won **1st place** in the competition.
 
-| Device | GPIO |
-|---|---|
-| HC-SR04 TRIG | 5 |
-| HC-SR04 ECHO | 18 |
-| Zone A soil analog | 34 |
-| Pump relay signal | 26 |
+The winning project received:
 
-Not wired yet (placeholders only, no fake readings): rain sensor, flow in, flow out, Zone A valve, Zone B valve, second soil probe.
+* **GHS 5,000 in gift vouchers**
+* **A Stanbic Bank internship opportunity**
 
-Zone A's soil probe is GPIO 34. Zone B keeps a practice-farm soil number until a second probe exists. HUMIS does not copy Zone A onto Zone B. There is one physical pump. Valve commands stay off until valve GPIOs are assigned.
+The project continues to be developed beyond the original prototype.
 
-### Board talk
+---
 
-1. Put a long secret in `.env` as `HUMIS_HARDWARE_KEY` and restart HUMIS.
-2. The ESP32 POSTs readings to `/api/hardware/telemetry?key=...`
-3. The ESP32 GETs `/api/hardware/command?key=...` (JSON or `format=csv`)
-4. HUMIS converts distance → tank litres and soil ADC → Zone A percent using the numbers on the Settings tab.
+## Repository Structure
 
-PictoBlox block-by-block firmware: `hardware/pictoblox/HUMIS-ESP32-firmware.md`.
+```text
+HUMIS/
+├── client/
+├── server/
+├── shared/
+├── hardware/
+├── docs/
+├── data/
+├── render.yaml
+├── package.json
+└── README.md
+```
 
-### Switch from practice farm to real board
+---
 
-1. Confirm Settings → **Real pump and sensors** shows the board is sending readings.
-2. Enter your own empty/full tank distances and dry/wet soil numbers. Do not keep the starter 100 cm / 20 cm unless you measured them.
-3. Bench-test the pump with the hardware key while `USE_SIMULATED=true` so a website watering click cannot start the real pump.
-4. Set `USE_SIMULATED=false` in `.env`.
-5. Restart HUMIS.
+## Core Design Principles
 
-Until step 4, watering on the website still drives the practice farm only.
+HUMIS is built around several principles:
 
-## Project status
+### 1. Water first
 
-- [x] **Phase 0** — project scaffold, V1-matching visual shell, six placeholder tabs.
-- [x] **Phase 1** — domain types, `SimulatedDeviceProvider`, water-accounting math, data APIs.
-- [x] **Phase 2** — Overview and Water tabs wired to simulated data, with explicit
-      measured/estimated/simulated labeling.
-- [x] **Phase 3** — Irrigation tab, hysteresis-based irrigation engine, and the single
-      safety-controller choke point for every pump/valve action.
-- [x] **Phase 4** — Planning, History, and Settings. **4A–4C done.**
-- [x] **Phase 5** — Farmer-friendly visual intelligence: soil/tank/weather/irrigation
-      pictures mapped from existing readings and thresholds (no new calculations).
-- [x] **Phase 6** — Visual redesign: mint page, deep teal actions, outlined tabs, clearer
-      cards and badges. Gold is a navigation accent (tab outlines and a small diamond
-      mark). It is not used as a warning color. Full Adinkra patterning is not in this phase.
-- [x] **Phase 7** — AquaFlow Assistant (text chat). Questions use existing farm data.
-      Watering commands go through `safetyController` only — never a second control path.
-- [x] **Phase 8A** — Speech input. Microphone in the existing assistant; Khaya AI ASR
-      (`eng`) turns talk into text, then the same Phase 7 `/api/assistant/chat` path.
-- [x] **Phase 8B** — Assistant speaks new replies with Khaya AI TTS (`eng`). Written
-      answers stay on screen. No Ghanaian-language switching yet.
-- [x] **Khaya voice layer** — microphone states, farmer-friendly voice errors, language
-      catalog for later Ghanaian languages, and recording/playback that cannot stay stuck.
-- [x] **Phase 8C** — Ghanaian-language selector in the existing Assistant. Khaya remains
-      ears and mouth (ASR, translation to/from English, TTS). HUMIS remains the farm brain
-      and safety gate. Default stays English.
-- [x] **Sign-in** — email/password accounts, httpOnly sessions, protected farm screens and
-      APIs, Settings account card, and password-reset tokens (SMTP optional).
-- [x] **Phase 9** — ESP32 hardware framework behind the existing `DeviceProvider`. Practice
-      farm stays the default (`USE_SIMULATED=true`). Real tank distance, Zone A soil, and
-      the shared pump are wired. Rain, flow, valves, and a second soil probe are placeholders
-      until GPIOs are assigned.
+The system is fundamentally about helping farmers manage limited water better.
+
+### 2. One main tank
+
+The main tank is the central storage point for available irrigation water.
+
+### 3. No false certainty
+
+Estimated, simulated and forecast values should be clearly identified.
+
+### 4. Farmer-friendly
+
+The system should communicate in language that a farmer can understand without requiring technical knowledge.
+
+### 5. Safety before automation
+
+No AI recommendation or user interface should bypass the central safety controller.
+
+### 6. Incremental development
+
+The physical prototype and software should be expanded without unnecessarily changing the fundamental HUMIS architecture.
+
+### 7. Hardware should support the software
+
+The ESP32 provides physical sensing and actuation. The core farm-management intelligence remains in HUMIS.
+
+---
+
+## Current Repository
+
+The current HUMIS development repository is maintained separately from the older versions of the project.
+
+The latest development branch should be treated as the current working version rather than older `main` branches that may contain earlier versions of HUMIS.
+
+---
+
+## License
+
+Add the project's chosen license here before public distribution.
